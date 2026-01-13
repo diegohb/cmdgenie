@@ -4,13 +4,13 @@ The system SHALL allow users to register custom LLM providers with their own API
 
 #### Scenario: Custom provider registration
 - **GIVEN** user has a compatible LLM API endpoint
-- **WHEN** user runs `cmdgenie --register-provider <name> <endpoint> <model> <api-key>`
-- **THEN** custom provider is stored in configuration
-- **AND** provider is available for command generation
+- **WHEN** user runs `cmdgenie --add-provider custom <name> --endpoint <url> --model <model> --api-key <key>`
+- **THEN** custom provider is stored in provider registry
+- **AND** provider is available for selection and command generation
 - **AND** configuration persists across sessions
 
 #### Scenario: Custom provider usage
-- **GIVEN** custom provider is registered
+- **GIVEN** custom provider is registered in registry
 - **WHEN** user selects custom provider and runs command generation
 - **THEN** API calls are made to custom endpoint
 - **AND** Custom model and authentication are used
@@ -23,19 +23,19 @@ The system SHALL allow users to register custom LLM providers with their own API
 - **AND** Provider is not registered
 - **AND** Helpful error message guides user to correct format
 
-### Requirement: Extended Configuration Schema
-The configuration system SHALL support multiple custom providers alongside built-in providers.
+### Requirement: Custom Provider Registry Integration
+The provider registry SHALL support custom providers alongside built-in providers.
 
-#### Scenario: Configuration storage
+#### Scenario: Registry storage
 - **GIVEN** custom provider registration
-- **WHEN** configuration is saved
-- **THEN** custom providers are stored in ~/.cmdgenie/config.json
-- **AND** Configuration schema includes customProviders array
-- **AND** Each custom provider has name, endpointUrl, model, apiKey fields
+- **WHEN** provider is added to registry
+- **THEN** custom providers are stored in ~/.cmdgenie/providers.json
+- **AND** Registry includes custom provider entries with endpoint, model, apiKey
+- **AND** Custom providers appear in --list-providers output
 
-#### Scenario: Provider switching
-- **GIVEN** multiple custom providers registered
-- **WHEN** user switches between providers
-- **THEN** configuration updates correctly
-- **AND** New provider settings take effect immediately
-- **AND** Previous provider settings are preserved
+#### Scenario: Provider activation
+- **GIVEN** custom provider registered in registry
+- **WHEN** user runs `--update-llm <custom-provider-name>`
+- **THEN** custom provider becomes active
+- **AND** Configuration references the selected custom provider
+- **AND** Command generation uses custom provider settings
