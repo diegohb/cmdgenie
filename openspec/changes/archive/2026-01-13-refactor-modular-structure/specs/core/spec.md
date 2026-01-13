@@ -12,8 +12,64 @@ The project SHALL use TypeScript for type safety and better development experien
 - **GIVEN** TypeScript source code in src/ directory structure
 - **WHEN** developer runs `npm run build`
 - **THEN** TypeScript compiles to JavaScript
-- **AND** Compiled JavaScript is output to dist/index.js
+- **AND** Compiled JavaScript is output to dist/ directory with shebang
 - **AND** No type errors are reported
+
+### Requirement: Build Process
+The project SHALL provide build scripts for TypeScript compilation from modular source structure.
+
+#### Scenario: Build command
+- **GIVEN** package.json with build scripts
+- **AND** tsconfig.json configured for src/ directory
+- **WHEN** developer runs `npm run build`
+- **THEN** TypeScript compiler runs on all modules in src/
+- **AND** Compiled JavaScript is generated in dist/ directory
+- **AND** Build output is suitable for npm publication
+- **AND** No compilation errors occur
+
+#### Scenario: Clean build
+- **GIVEN** Previous build artifacts in dist/
+- **WHEN** developer runs `npm run clean && npm run build`
+- **THEN** dist/ directory is removed
+- **AND** Fresh compilation from src/ to dist/ succeeds
+
+### Requirement: TypeScript Configuration
+The project SHALL include tsconfig.json with appropriate compiler options for modular structure.
+
+#### Scenario: Config file exists
+- **GIVEN** project root directory
+- **WHEN** developer checks for tsconfig.json
+- **THEN** file exists with valid TypeScript configuration
+- **AND** Target is set to ES2018 or higher for Node.js compatibility
+- **AND** Module resolution is set to node
+- **AND** outDir points to dist/
+- **AND** rootDir points to src/
+- **AND** include pattern covers src/**/*.ts
+
+### Requirement: Documentation Updates
+The project SHALL update all documentation to reflect modular architecture and access modifier conventions.
+
+#### Scenario: AGENTS.md update
+- **GIVEN** AGENTS.md file
+- **WHEN** developer reads architecture guidelines
+- **THEN** Modular directory structure is documented
+- **AND** Access modifier guidelines are included
+- **AND** Naming conventions (PascalCase public, underscore+pascalCase private) are documented
+- **AND** Module organization is explained
+
+#### Scenario: project.md update
+- **GIVEN** openspec/project.md file
+- **WHEN** developer reads architecture section
+- **THEN** Modular architecture is listed instead of single-file
+- **AND** "Single-file architecture" constraint is removed
+- **AND** src/ directory structure is documented
+- **AND** Access modifier and naming conventions are listed
+
+#### Scenario: Import examples
+- **GIVEN** AGENTS.md or documentation
+- **WHEN** developer reviews code examples
+- **THEN** Import examples show modular structure (e.g., `import { CmdGenie } from './cli'`)
+- **AND** Public API usage examples are provided
 
 ## REMOVED Requirements
 ### Requirement: Single-File Architecture
@@ -100,55 +156,6 @@ The project SHALL enforce consistent naming conventions for public and private m
 - **THEN** Same naming conventions applied consistently
 - **AND** No mixing of conventions within or between modules
 
-### Requirement: Type Safety
-The project SHALL use TypeScript interfaces and type annotations throughout the codebase with modular organization.
-
-#### Scenario: Type annotations in modules
-- **GIVEN** Modular TypeScript source code
-- **WHEN** developer examines class properties and methods in any module
-- **THEN** All properties have explicit types or inferred types
-- **AND** All method parameters and return values are typed
-- **AND** Interfaces are defined for complex data structures
-- **AND** Types are organized in src/types/ module
-
-#### Scenario: Module interfaces
-- **GIVEN** Modular source structure
-- **WHEN** developer examines src/types/
-- **THEN** Core types exist (Config, ProviderConfig)
-- **AND** Provider response types exist as internal (_OpenAIResponse, _AnthropicResponse, etc.)
-- **AND** Provider interface exists for common contract (Provider, _ProviderRegistry)
-
-### Requirement: Build Process
-The project SHALL provide build scripts for TypeScript compilation from modular source structure.
-
-#### Scenario: Build command
-- **GIVEN** package.json with build scripts
-- **AND** tsconfig.json configured for src/ directory
-- **WHEN** developer runs `npm run build`
-- **THEN** TypeScript compiler runs on all modules in src/
-- **AND** Compiled JavaScript is generated in dist/ directory
-- **AND** Build output is suitable for npm publication
-- **AND** No compilation errors occur
-
-#### Scenario: Clean build
-- **GIVEN** Previous build artifacts in dist/
-- **WHEN** developer runs `npm run clean && npm run build`
-- **THEN** dist/ directory is removed
-- **AND** Fresh compilation from src/ to dist/ succeeds
-
-### Requirement: TypeScript Configuration
-The project SHALL include tsconfig.json with appropriate compiler options for modular structure.
-
-#### Scenario: Config file exists
-- **GIVEN** project root directory
-- **WHEN** developer checks for tsconfig.json
-- **THEN** file exists with valid TypeScript configuration
-- **AND** Target is set to ES2018 or higher for Node.js compatibility
-- **AND** Module resolution is set to node
-- **AND** outDir points to dist/
-- **AND** rootDir points to src/
-- **AND** include pattern covers src/**/*.ts
-
 ### Requirement: Backward Compatibility
 The project SHALL maintain backward compatibility of the external CLI interface.
 
@@ -170,28 +177,3 @@ The project SHALL maintain backward compatibility of the external CLI interface.
 - **THEN** Generated command is identical to pre-refactor version
 - **AND** Interactive confirmation behaves identically
 - **AND** Execution output is identical
-
-### Requirement: Documentation Updates
-The project SHALL update all documentation to reflect modular architecture and access modifier conventions.
-
-#### Scenario: AGENTS.md update
-- **GIVEN** AGENTS.md file
-- **WHEN** developer reads architecture guidelines
-- **THEN** Modular directory structure is documented
-- **AND** Access modifier guidelines are included
-- **AND** Naming conventions (PascalCase public, underscore+pascalCase private) are documented
-- **AND** Module organization is explained
-
-#### Scenario: project.md update
-- **GIVEN** openspec/project.md file
-- **WHEN** developer reads architecture section
-- **THEN** Modular architecture is listed instead of single-file
-- **AND** "Single-file architecture" constraint is removed
-- **AND** src/ directory structure is documented
-- **AND** Access modifier and naming conventions are listed
-
-#### Scenario: Import examples
-- **GIVEN** AGENTS.md or documentation
-- **WHEN** developer reviews code examples
-- **THEN** Import examples show modular structure (e.g., `import { CmdGenie } from './cli'`)
-- **AND** Public API usage examples are provided
