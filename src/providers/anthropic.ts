@@ -4,14 +4,16 @@ import {
     ANTHROPIC_MODEL,
     MAX_TOKENS,
     GetOS,
+    GetShell,
     AnthropicResponse
 } from '../types';
 
 export class AnthropicProvider implements Provider {
     public readonly Name: string = 'anthropic';
 
-    public async Execute(prompt: string, apiKey: string, model: string): Promise<string> {
-        const response = await fetch(ANTHROPIC_URL, {
+    public async Execute(prompt: string, apiKey: string, model: string, endpointUrl?: string): Promise<string> {
+        const url = endpointUrl || ANTHROPIC_URL;
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -27,7 +29,7 @@ export class AnthropicProvider implements Provider {
                         content: `You are a command line expert. Generate only the exact command(s) needed for: "${prompt}".
 Respond with ONLY the command(s), no explanations.
 If multiple commands needed, separate with &&.
-Current OS: ${GetOS()}`
+Current OS: ${GetOS()}, Current Shell: ${GetShell()}`
                     }
                 ]
             })

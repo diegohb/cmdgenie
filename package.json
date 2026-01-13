@@ -13,10 +13,44 @@
         "dev": "tsc --watch",
         "prepublishOnly": "npm run build",
         "postbuild": "powershell -Command \"$content = Get-Content dist\\index.js; Set-Content -Path dist\\index.js -Value '#!/usr/bin/env node', $content\"",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "lint": "oxlint src/ tests/",
+        "lint:fix": "oxlint --fix src/ tests/",
+        "test": "npm run lint && jest",
+        "test:watch": "jest --watch",
+        "test:coverage": "jest --coverage"
+    },
+    "jest": {
+        "preset": "ts-jest",
+        "testEnvironment": "node",
+        "setupFilesAfterEnv": [
+            "<rootDir>/tests/setup.ts"
+        ],
+        "roots": [
+            "<rootDir>/src",
+            "<rootDir>/tests"
+        ],
+        "testMatch": [
+            "**/__tests__/**/*.ts",
+            "**/?(*.)+(spec|test).ts"
+        ],
+        "collectCoverageFrom": [
+            "src/**/*.ts",
+            "!src/**/*.d.ts",
+            "!src/index.ts"
+        ],
+        "coverageDirectory": "coverage",
+        "coverageReporters": [
+            "text",
+            "lcov",
+            "html"
+        ]
     },
     "devDependencies": {
+        "@types/jest": "^30.0.0",
         "@types/node": "^20.19.28",
+        "jest": "^30.2.0",
+        "oxlint": "^0.15.8",
+        "ts-jest": "^29.4.6",
         "typescript": "^5.9.3"
     },
     "keywords": [
@@ -58,5 +92,8 @@
         "tsconfig.json",
         "README.md",
         "LICENSE"
-    ]
+    ],
+    "dependencies": {
+        "commander": "^14.0.2"
+    }
 }

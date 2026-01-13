@@ -1,8 +1,5 @@
-# core Specification
+## REMOVED Requirements
 
-## Purpose
-TBD - created by archiving change convert-to-typescript. Update Purpose after archive.
-## Requirements
 ### Requirement: Tech Stack
 The project SHALL use TypeScript for type safety and better development experience with a modular architecture.
 
@@ -195,3 +192,128 @@ The project SHALL maintain backward compatibility of the external CLI interface.
 - **AND** Interactive confirmation behaves identically
 - **AND** Execution output is identical
 
+### Requirement: Jest Testing Framework
+The project SHALL use Jest for automated unit and integration testing to ensure code quality and prevent regressions.
+
+#### Scenario: Jest configuration
+- **GIVEN** package.json and project structure
+- **WHEN** developer runs `npm install`
+- **THEN** Jest and related testing dependencies are installed
+- **AND** jest.config.js exists with TypeScript support
+- **AND** Test scripts are available in package.json
+
+#### Scenario: Unit test execution
+- **GIVEN** test files in __tests__/ directories
+- **WHEN** developer runs `npm test`
+- **THEN** All unit tests execute successfully
+- **AND** Test coverage is reported
+- **AND** No test failures occur
+
+#### Scenario: Integration test execution
+- **GIVEN** integration test files
+- **WHEN** developer runs `npm run test:integration`
+- **THEN** End-to-end workflows are tested
+- **AND** Mock API responses are used for external dependencies
+- **AND** Cross-platform scenarios are covered
+
+### Requirement: Test Coverage
+The project SHALL maintain comprehensive test coverage for critical functionality.
+
+#### Scenario: Core module coverage
+- **GIVEN** source code in src/ modules
+- **WHEN** tests run with coverage
+- **THEN** ConfigManager has >90% coverage
+- **AND** Provider implementations have >80% coverage
+- **AND** CLI interface has >85% coverage
+
+#### Scenario: Test organization
+- **GIVEN** test directory structure
+- **WHEN** developer examines tests
+- **THEN** Unit tests are colocated with source files in __tests__/
+- **AND** Integration tests are in separate integration/ directory
+- **AND** Test naming follows source file naming conventions
+
+### Requirement: Code Linting with Oxlint
+The project SHALL use Oxlint for automated code quality and style checking.
+
+#### Scenario: Oxlint installation
+- **GIVEN** package.json devDependencies
+- **WHEN** developer runs `npm install`
+- **THEN** oxlint is installed as a dev dependency
+- **AND** oxlint binary is available for execution
+
+#### Scenario: Linting configuration
+- **GIVEN** project root directory
+- **WHEN** developer checks for linting config
+- **THEN** .oxlintrc.json exists with appropriate rules
+- **AND** Rules are configured for TypeScript/JavaScript
+- **AND** Rules align with project coding standards
+
+#### Scenario: Linting execution
+- **GIVEN** TypeScript source files
+- **WHEN** developer runs `npm run lint`
+- **THEN** Oxlint scans all source files
+- **AND** Reports any linting violations
+- **AND** Provides clear error messages and locations
+
+#### Scenario: CI/CD integration
+- **GIVEN** package.json scripts
+- **WHEN** CI/CD runs `npm test`
+- **THEN** Linting is executed before tests
+- **AND** Build fails if linting violations exist
+- **AND** Linting runs on all supported platforms
+
+### Requirement: Provider Registry Persistence
+The system SHALL maintain a persistent registry of configured LLM providers with their credentials.
+
+#### Scenario: Registry file creation
+- **GIVEN** user runs first provider registration command
+- **WHEN** provider is successfully registered
+- **THEN** ~/.cmdgenie/providers.json is created
+- **AND** provider credentials are stored securely
+- **AND** registry persists across sessions
+
+#### Scenario: Multiple provider support
+- **GIVEN** registry supports multiple providers
+- **WHEN** user registers additional providers
+- **THEN** all providers are stored in registry
+- **AND** each provider maintains independent credentials
+- **AND** providers can be listed and managed individually
+
+#### Scenario: Registry integrity
+- **GIVEN** registry file exists
+- **WHEN** application starts
+- **THEN** registry is loaded and validated
+- **AND** corrupted entries are handled gracefully
+
+### Requirement: Provider Management Commands
+The CLI SHALL provide commands for managing the provider registry.
+
+#### Scenario: Add provider command
+- **GIVEN** user wants to register a new provider
+- **WHEN** user runs `--add-provider <type> <name> [options]`
+- **THEN** provider is validated and added to registry
+- **AND** API key is prompted or provided securely
+
+#### Scenario: List providers command
+- **GIVEN** providers are registered
+- **WHEN** user runs `--list-providers`
+- **THEN** all registered providers are displayed
+- **AND** active provider is highlighted
+- **AND** provider types and names are shown
+
+#### Scenario: Switch active provider
+
+#### Scenario: Remove provider command
+- **GIVEN** user wants to remove a provider
+- **WHEN** user runs `--remove-provider <name>`
+- **THEN** provider is removed from registry
+- **AND** confirmation is shown
+- **AND** if it was active, user is prompted to choose new active provider
+
+#### Scenario: Show provider command
+- **GIVEN** user wants to see provider details
+- **WHEN** user runs `--show-provider <name>`
+- **THEN** provider information is displayed
+- **AND** credentials are masked for security</content>
+<parameter name="filePath">openspec/changes/split-core-spec/specs/core/spec.md

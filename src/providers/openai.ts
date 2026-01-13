@@ -5,14 +5,16 @@ import {
     MAX_TOKENS,
     TEMPERATURE,
     GetOS,
+    GetShell,
     OpenAIResponse
 } from '../types';
 
 export class OpenAIProvider implements Provider {
     public readonly Name: string = 'openai';
 
-    public async Execute(prompt: string, apiKey: string, model: string): Promise<string> {
-        const response = await fetch(OPENAI_URL, {
+    public async Execute(prompt: string, apiKey: string, model: string, endpointUrl?: string): Promise<string> {
+        const url = endpointUrl || OPENAI_URL;
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -27,7 +29,7 @@ export class OpenAIProvider implements Provider {
 Respond with ONLY the command(s), no explanations or formatting.
 If multiple commands are needed, separate them with &&.
 Detect the operating system context and provide appropriate commands.
-Current OS: ${GetOS()}`
+Current OS: ${GetOS()}, Current Shell: ${GetShell()}`
                     },
                     { role: 'user', content: prompt }
                 ],

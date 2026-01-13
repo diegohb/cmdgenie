@@ -404,6 +404,36 @@ main().catch(console.error);
 - **Root index.ts** acts as barrel export for npm
 - **No tests or linting** - manual testing only
 
+## Custom LLM Providers
+
+CmdGenie supports custom OpenAI-compatible LLM providers for maximum flexibility:
+
+### Adding Custom Providers
+```bash
+# Basic custom provider
+node dist/index.js --add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions
+
+# Custom provider with different model
+node dist/index.js --add-provider mylocal custom your-api-key llama-3.1-8b http://localhost:8000/v1/chat/completions
+```
+
+### Supported API Formats
+- **OpenAI-compatible** REST API endpoints
+- JSON request/response format matching OpenAI Chat Completions API
+- Bearer token authentication
+- Standard chat completion parameters (messages, model, max_tokens, temperature)
+
+### Requirements
+- Endpoint URL must be provided when registering custom providers
+- API must support OpenAI Chat Completions format
+- Valid API key for authentication
+
+### Troubleshooting
+- **Connection errors**: Verify endpoint URL is accessible and correct
+- **Authentication errors**: Check API key is valid and properly formatted
+- **Format errors**: Ensure API supports OpenAI-compatible chat completions endpoint
+- **Model not found**: Verify the model name is supported by your custom provider
+
 ## Adding New LLM Providers
 
 1. Create new provider file in `src/providers/` (e.g., `mistral.ts`)

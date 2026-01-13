@@ -1,0 +1,12 @@
+{
+  "rules": {
+    "correctness": "warn",
+    "suspicious": "warn",
+    "pedantic": "off",
+    "style": "off",
+    "nursery": "off"
+  },
+  "allow": [
+    "node_modules/**"
+  ]
+}

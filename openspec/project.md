@@ -13,8 +13,8 @@ CmdGenie is an AI-powered command line tool that transforms natural language req
 ## Project Conventions
 
 ### Code Style
-See [AGENTS.md](../AGENTS.md) for comprehensive code style guidelines including:
-- **Note**: AGENTS.md contains detailed code style patterns, TypeScript guidelines, naming conventions, and architectural patterns. This file defers to AGENTS.md to avoid duplication and serve as project-specific context.
+See [nonfunctional-codebase spec](../specs/nonfunctional-codebase/spec.md) for comprehensive code style guidelines including:
+- **Note**: The nonfunctional-codebase spec contains detailed code style patterns, TypeScript guidelines, naming conventions, and architectural patterns. This file defers to the spec to avoid duplication and serve as project-specific context.
 - Import patterns (ES6 imports, modular structure)
 - Naming conventions (PascalCase public, underscore+pascalCase private, UPPER_SNAKE_CASE constants)
 - Access modifiers (explicit public/private for all class members)
@@ -25,7 +25,7 @@ See [AGENTS.md](../AGENTS.md) for comprehensive code style guidelines including:
 - Template literals for string formatting
 
 ### Architecture Patterns
-See [AGENTS.md](../AGENTS.md) for architecture details:
+See [nonfunctional-codebase spec](../specs/nonfunctional-codebase/spec.md) for architecture details:
 - Modular `src/` directory structure (types, config, providers, cli)
 - ConfigManager class for configuration management
 - Provider interface and registry pattern for LLM providers
@@ -35,30 +35,35 @@ See [AGENTS.md](../AGENTS.md) for architecture details:
 - OS-aware command generation
 
 ### Testing Strategy
-- **Manual testing only** - No automated test framework
+- **Jest testing framework** - Automated unit and integration testing
 - Build first: `npm run build`
+- Run tests: `npm test` for unit tests, `npm run test:integration` for integration tests
 - Test via CLI: `node dist/index.js "your prompt"` or `npm link && cmdgenie "your prompt"`
 - Test each LLM provider with actual API keys
 - Verify cross-platform behavior on macOS, Windows, Linux
+- Maintain >80% test coverage for core functionality
 
 ### Git Workflow
 - Feature branches for changes (e.g., `add-new-provider`, `refactor-modular-structure`)
 - Commit messages should be concise and descriptive
-- No automated CI/CD for testing (manual testing required)
-- GitHub Actions used only for docs deployment to GitHub Pages
+- Automated testing with Jest in CI/CD pipeline
+- Oxlint linting runs before tests in CI/CD
+- GitHub Actions used for testing and docs deployment to GitHub Pages
 
 ## Domain Context
 - **Command Line Expertise**: Tool generates shell commands based on natural language
+- **LLM Provider Registry**: Supports multiple LLM providers with persistent configuration management
 - **LLM API Integration**: Each provider has unique API endpoints and response formats
 - **Cross-Platform Commands**: Generated commands must work on detected OS (macOS, Linux, Windows)
 - **Interactive Safety**: Commands shown before execution for user review
 - **Command Cleaning**: AI responses may include markdown formatting that needs stripping
+- **Provider Management**: CLI commands for adding, listing, switching, and removing LLM providers
 
 ## Important Constraints
 - **Modular architecture**: All source code in `src/` directory with organized modules
 - **TypeScript required**: Compile to JavaScript with `npm run build`
-- **No test framework**: Manual CLI testing only
-- **No linting**: Follow existing code style and TypeScript best practices
+- **Jest testing framework**: Automated unit and integration testing required
+- **Oxlint linting**: Automated code quality and style checking required
 - **Node.js >=14.0.0**: Minimum required version
 - **Security**: Never log API keys, validate providers, use safe config storage
 - **Shebang required**: `#!/usr/bin/env node` at top of compiled `dist/index.js` for CLI execution
@@ -70,5 +75,8 @@ See [AGENTS.md](../AGENTS.md) for architecture details:
 - **Anthropic API**: https://api.anthropic.com/v1/messages
 - **Google AI API**: https://generativelanguage.googleapis.com/v1beta
 - **Cohere API**: https://api.cohere.ai/v1/generate
+- **Jest**: Testing framework
+- **Oxlint**: Code linting and style checking
+- **@types/node**: TypeScript definitions for Node.js
 
-All dependencies are external APIs - no npm packages beyond Node.js built-ins (fs, path, os, child_process, readline).
+Core dependencies are external APIs and testing tools - Node.js built-ins (fs, path, os, child_process, readline) used throughout.

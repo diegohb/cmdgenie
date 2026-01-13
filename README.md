@@ -130,6 +130,15 @@ This project uses TypeScript. After installing dependencies:
 # Install dependencies
 npm install
 
+# Run linting
+npm run lint
+
+# Fix linting issues automatically (where possible)
+npm run lint:fix
+
+# Run tests (includes linting)
+npm test
+
 # Build TypeScript to JavaScript
 npm run build
 
@@ -158,11 +167,161 @@ cmdgenie "show disk usage"
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+We welcome contributions! This project uses OpenSpec for structured development and follows specific conventions for branching, committing, and code changes.
+
+### Development Workflow
+
+CmdGenie uses OpenSpec for managing changes and specifications. All significant changes must go through the OpenSpec workflow:
+
+1. **Create a Change Proposal**: Use `openspec` commands to create structured proposals
+2. **Implement Changes**: Follow the proposal's implementation plan
+3. **Validate**: Ensure all requirements are met and tests pass
+4. **Archive**: Move completed changes to archive
+
+### Branching Strategy
+
+We use feature branches for all development work:
+
+- **Main branch**: `main` - production-ready code
+- **Feature branches**: `add-<feature>`, `update-<feature>`, `refactor-<component>` (kebab-case, verb-led)
+- **OpenSpec branches**: `openspec-proposals` - for active development work
+
+**Branch Naming Examples:**
+- `add-ollama-provider`
+- `refactor-modular-structure`
+- `update-readme-contribution-guidelines`
+- `fix-memory-leak`
+
+**Workflow:**
+1. Create feature branch from `main`: `git checkout -b add-new-feature`
+2. Work on changes following OpenSpec process
+3. Push branch and create pull request
+4. After review and merge, delete feature branch
+
+### Commit Conventions
+
+We follow conventional commit format for clear, structured commit messages:
+
+```
+<type>: <description>
+
+[optional body]
+
+[optional footer]
+```
+
+**Types:**
+- `feat`: New features
+- `fix`: Bug fixes
+- `docs`: Documentation changes
+- `refactor`: Code restructuring without behavior change
+- `test`: Testing-related changes
+- `chore`: Maintenance tasks
+
+**Examples:**
+```
+feat: implement Ollama provider support
+docs: update README with contribution guidelines
+refactor: split core spec into functional and nonfunctional
+fix: resolve memory leak in provider registry
+```
+
+**Guidelines:**
+- Use imperative mood ("implement" not "implemented")
+- Keep subject line under 50 characters
+- Use body for detailed explanations when needed
+- Reference issue numbers when applicable
+
+### OpenSpec Workflow
+
+All changes must be proposed and tracked using OpenSpec:
+
+#### 1. Creating a Proposal
+```bash
+# Check existing changes
+openspec list
+
+# Create new change proposal
+openspec [create new change with proper structure]
+```
+
+Each proposal includes:
+- `proposal.md`: Why and what changes
+- `tasks.md`: Implementation checklist
+- `specs/[capability]/spec.md`: Specification deltas
+
+#### 2. Implementation
+- Follow `tasks.md` checklist sequentially
+- Run `openspec validate [change-id] --strict` regularly
+- Ensure tests pass: `npm test`
+- Run linting: `npm run lint`
+
+#### 3. Validation & Archive
+```bash
+# Final validation
+openspec validate [change-id] --strict
+
+# Archive completed change
+openspec archive [change-id] --yes
+```
+
+### Code Style Guidelines
+
+- **TypeScript**: Strict typing with explicit access modifiers
+- **Naming**: PascalCase for public members, underscore+pascalCase for private
+- **Architecture**: Modular structure in `src/` directory
+- **Testing**: Jest framework with >80% coverage target
+- **Linting**: Oxlint for code quality
+
+See `AGENTS.md` and `openspec/project.md` for detailed conventions.
+
+### Getting Started
+
+1. **Fork and Clone**:
+   ```bash
+   git clone https://github.com/your-username/cmdgenie.git
+   cd cmdgenie
+   ```
+
+2. **Setup Development Environment**:
+   ```bash
+   npm install
+   npm run build
+   npm test
+   ```
+
+3. **Understand the Codebase**:
+   - Read `openspec/project.md` for project context
+   - Check `openspec/specs/` for current specifications
+   - Review `AGENTS.md` for development guidelines
+
+4. **Make Changes**:
+   - Create OpenSpec proposal for significant changes
+   - Follow branching and commit conventions
+   - Add tests for new functionality
+   - Update documentation as needed
+
+### Testing
+
+- Run full test suite: `npm test`
+- Integration tests: `npm run test:integration`
+- Manual testing: `npm run build && node dist/index.js "your prompt"`
+- Cross-platform testing on macOS, Windows, Linux
+
+### Pull Request Process
+
+1. **Create PR**: Push your feature branch and create a pull request
+2. **Description**: Include OpenSpec change ID and link to proposal
+3. **Review**: Address review feedback
+4. **Merge**: After approval, squash merge to maintain clean history
+5. **Cleanup**: Delete feature branch after merge
+
+### Need Help?
+
+- Check existing OpenSpec proposals: `openspec list`
+- Read specifications: `openspec show [spec-name]`
+- Review archived changes for examples
+- Open an issue for questions or clarifications
 
 ## 📜 License
 

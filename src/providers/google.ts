@@ -1,10 +1,10 @@
 import { Provider } from './base';
-import { GOOGLE_URL, GOOGLE_MODEL, GetOS, GoogleResponse } from '../types';
+import { GOOGLE_URL, GOOGLE_MODEL, GetOS, GetShell, GoogleResponse } from '../types';
 
 export class GoogleProvider implements Provider {
     public readonly Name: string = 'google';
 
-    public async Execute(prompt: string, apiKey: string, model: string): Promise<string> {
+    public async Execute(prompt: string, apiKey: string, model: string, _endpointUrl?: string): Promise<string> {
         const response = await fetch(`${GOOGLE_URL}/${model || GOOGLE_MODEL}:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: {
@@ -16,7 +16,7 @@ export class GoogleProvider implements Provider {
                         text: `You are a command line expert. Generate only the exact command(s) needed for: "${prompt}".
 Respond with ONLY the command(s), no explanations.
 If multiple commands needed, separate with &&.
-Current OS: ${GetOS()}`
+Current OS: ${GetOS()}, Current Shell: ${GetShell()}`
                     }]
                 }]
             })

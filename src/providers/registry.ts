@@ -3,6 +3,8 @@ import { OpenAIProvider } from './openai';
 import { AnthropicProvider } from './anthropic';
 import { GoogleProvider } from './google';
 import { CohereProvider } from './cohere';
+import { OllamaProvider } from './ollama';
+import { CustomProvider } from './custom';
 import { PROVIDERS } from '../types';
 
 export class ProviderRegistry {
@@ -18,6 +20,8 @@ export class ProviderRegistry {
         this._providers.set('anthropic', AnthropicProvider);
         this._providers.set('google', GoogleProvider);
         this._providers.set('cohere', CohereProvider);
+        this._providers.set('ollama', OllamaProvider);
+        this._providers.set('custom', CustomProvider);
     }
 
     public GetProvider(name: string): Provider | null {
