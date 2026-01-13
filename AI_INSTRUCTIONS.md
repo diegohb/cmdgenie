@@ -44,7 +44,7 @@ npm run clean
 ```bash
 # Build first, then run CLI
 npm run build
-node dist/index.js "find all directories"
+node dist/main.js "find all directories"
 
 # Or after global installation
 npm link
@@ -69,16 +69,24 @@ cmdgenie remove-provider openai
 ### Provider Management Commands
 ```bash
 # Add providers
-node dist/index.js add-provider openai openai sk-your-key
-node dist/index.js add-provider anthropic anthropic your-key claude-3-haiku-20240307
-node dist/index.js add-provider google google your-key gemini-pro
-node dist/index.js add-provider cohere cohere your-key command
+node dist/main.js add-provider openai openai sk-your-key
+node dist/main.js add-provider anthropic anthropic your-key claude-3-haiku-20240307
+node dist/main.js add-provider google google your-key gemini-pro
+node dist/main.js add-provider cohere cohere your-key command
+node dist/main.js add-provider ollama ollama your-key llama3.1
+node dist/main.js add-provider mycustom custom your-key gpt-3.5-turbo https://api.example.com/v1/chat/completions
 
 # Set active provider
-node dist/index.js update-llm openai
+node dist/main.js update-llm openai
 
 # List providers
-node dist/index.js list-providers
+node dist/main.js list-providers
+
+# Show provider details
+node dist/main.js show-provider openai
+
+# Remove provider
+node dist/main.js remove-provider openai
 ```
 
 ## Architecture Overview
@@ -457,10 +465,10 @@ CmdGenie supports custom OpenAI-compatible LLM providers for maximum flexibility
 ### Adding Custom Providers
 ```bash
 # Basic custom provider
-node dist/index.js add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions
+node dist/main.js add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions
 
 # Custom provider with different model
-node dist/index.js add-provider mylocal custom your-api-key llama-3.1-8b http://localhost:8000/v1/chat/completions
+node dist/main.js add-provider mylocal custom your-api-key llama-3.1-8b http://localhost:8000/v1/chat/completions
 ```
 
 ### Supported API Formats

@@ -53,10 +53,10 @@ cmdgenie "show disk usage"
 
 ### Update LLM Provider
 ```bash
-node dist/index.js --update-llm openai sk-your-key
-node dist/index.js --update-llm anthropic your-key claude-3-haiku-20240307
-node dist/index.js --update-llm google your-key gemini-pro
-node dist/index.js --update-llm cohere your-key
+node dist/main.js update-llm openai
+node dist/main.js update-llm anthropic
+node dist/main.js update-llm google
+node dist/main.js update-llm cohere
 ```
 
 ## Architecture Overview
@@ -317,22 +317,35 @@ export class OpenAIProvider implements Provider {
 ```
 
 ### System Prompts
-Include OS detection and strict output formatting:
+Include OS and shell detection for contextual command generation, and explicitly request omission of reasoning content:
 ```javascript
 {
     role: 'system',
-    content: `You are a command line expert. Generate only the exact command(s) needed for the user's request. 
-Respond with ONLY the command(s), no explanations or formatting. 
+    content: `You are a command line expert. Generate only the exact command(s) needed for the user's request.
+Respond with ONLY the command(s), no explanations or formatting.
+Do not include any reasoning, thinking, or internal monologue content.
 If multiple commands are needed, separate them with &&.
-Detect the operating system context and provide appropriate commands.
-Current OS: ${os.platform()}`
+Detect the operating system and shell context and provide appropriate commands.
+Current OS: ${GetOS()}, Current Shell: ${GetShell()}`
 }
 ```
 
 ### Command Cleaning
-Clean AI responses before execution:
+Clean AI responses before execution, including reasoning content removal:
 ```javascript
-command = command.replace(/```[\s\S]*?```/g, '').replace(/`/g, '').trim();
+// Remove code block formatting
+let cleaned = response.replace(/```[\s\S]*?```/g, '').replace(/`/g, '');
+
+// Remove reasoning/thinking tags (various formats)
+cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '');
+cleaned = cleaned.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
+cleaned = cleaned.replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '');
+cleaned = cleaned.replace(/<internal>[\s\S]*?<\/internal>/gi, '');
+
+// Remove any remaining XML-like tags that might contain reasoning
+cleaned = cleaned.replace(/<\w+>[\s\S]*?<\/\w+>/gi, '');
+
+command = cleaned.trim();
 ```
 
 ### Interactive Execution
@@ -353,26 +366,19 @@ rl.question('\n🚀 Execute this command? (y/N): ', async (answer) => {
 ```
 
 ### Main Execution Pattern
-Parse arguments and route to methods:
+Use Commander.js for structured CLI with interactive prompting:
 ```typescript
-import { CmdGenie } from './cli';
+import { setupCLI } from './cli/commands';
 
-async function main(): Promise<void> {
-    const genie = new CmdGenie();
-    const args = process.argv.slice(2);
+async function main() {
+    const program = setupCLI();
 
-    if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
-        genie.ShowHelp();
-        return;
+    try {
+        await program.parseAsync();
+    } catch (error) {
+        console.error('❌ Error:', (error as Error).message);
+        process.exit(1);
     }
-
-    // Note: CLI now uses Commander.js with structured commands
-    // update-llm command: cmdgenie update-llm <provider-name>
-    // add-provider command: cmdgenie add-provider <name> <provider> <api-key> [model] [endpoint]
-    }
-
-    const prompt = args.join(' ').replace(/^["']|["']$/g, '');
-    await genie.GenerateCommand(prompt);
 }
 
 main().catch(console.error);
@@ -397,8 +403,10 @@ main().catch(console.error);
   - `src/cli/` - CLI interface (CmdGenie class)
   - `src/index.ts` - Main entry point
 - **Public API** exported from `src/cli/index.ts` and `src/types/index.ts`
-- **Root index.ts** acts as barrel export for npm
-- **No tests or linting** - manual testing only
+- **CLI Framework**: Commander.js with interactive prompting
+- **Configuration**: Registry-based provider storage with active provider selection
+- **Testing**: Jest framework with comprehensive unit and integration tests
+- **Linting**: Oxlint for code quality and style checking
 
 ## Custom LLM Providers
 
@@ -407,10 +415,10 @@ CmdGenie supports custom OpenAI-compatible LLM providers for maximum flexibility
 ### Adding Custom Providers
 ```bash
 # Basic custom provider
-node dist/index.js --add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions
+node dist/main.js add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions
 
 # Custom provider with different model
-node dist/index.js --add-provider mylocal custom your-api-key llama-3.1-8b http://localhost:8000/v1/chat/completions
+node dist/main.js add-provider mylocal custom your-api-key llama-3.1-8b http://localhost:8000/v1/chat/completions
 ```
 
 ### Supported API Formats
@@ -443,8 +451,8 @@ node dist/index.js --add-provider mylocal custom your-api-key llama-3.1-8b http:
 
 - **Node.js version**: >=14.0.0
 - **TypeScript enabled** - compile with `npm run build`
-- **No test framework** - manual testing via CLI
-- **No linting** - follow existing code style and TypeScript best practices
-- **Cross-platform** - always use `os.platform()` in prompts
+- **Testing**: Jest framework with comprehensive unit and integration tests
+- **Linting**: Oxlint for code quality and style checking
+- **Cross-platform** - uses `GetOS()` and `GetShell()` for context
 - **Shebang required**: `#!/usr/bin/env node` at top of compiled `dist/index.js`
 - **Modular architecture** - use src/ directory for all source code

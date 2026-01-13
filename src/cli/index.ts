@@ -208,11 +208,11 @@ export class CmdGenie {
 
   Usage:
     cmdgenie "your natural language request"
-     cmdgenie --add-provider <name> <provider> <api-key> [model] [endpoint-url]
-    cmdgenie --list-providers
-    cmdgenie --remove-provider <name>
-    cmdgenie --show-provider <name>
-    cmdgenie --update-llm <provider-name>
+    cmdgenie add-provider <name> <provider> <api-key> [model] [endpoint-url]
+    cmdgenie list-providers
+    cmdgenie remove-provider <name>
+    cmdgenie show-provider <name>
+    cmdgenie update-llm <provider-name>
     cmdgenie --help
 
   Examples:
@@ -221,13 +221,13 @@ export class CmdGenie {
     cmdgenie "kill process on port 3000"
 
   Provider Management:
-    cmdgenie --add-provider myopenai openai sk-your-api-key
-    cmdgenie --add-provider myanthropic anthropic your-api-key claude-3-haiku-20240307
-    cmdgenie --add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions
-    cmdgenie --list-providers
-    cmdgenie --show-provider myopenai
-    cmdgenie --update-llm myopenai
-    cmdgenie --remove-provider myopenai
+    cmdgenie add-provider myopenai openai sk-your-api-key
+    cmdgenie add-provider myanthropic anthropic your-api-key claude-3-haiku-20240307
+    cmdgenie add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions
+    cmdgenie list-providers
+    cmdgenie show-provider myopenai
+    cmdgenie update-llm myopenai
+    cmdgenie remove-provider myopenai
 
   Current config:
     Active Provider: ${this._configManager.ActiveProvider || 'None'}

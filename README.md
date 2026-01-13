@@ -4,11 +4,12 @@ Transform natural language into precise command line instructions using AI. CmdG
 
 ## ✨ Features
 
-- 🤖 Multiple LLM providers (OpenAI, Anthropic, Google, Cohere)
+- 🤖 Multiple LLM providers (OpenAI, Anthropic, Google, Cohere, Ollama, Custom)
 - 🌍 Cross-platform support (macOS, Windows, Linux)
 - 🔧 Configurable AI models and API keys
 - 🚀 Interactive command execution
 - 📝 Natural language to command translation
+- 🧠 Reasoning content filtering (removes thinking tags from AI responses)
 - 💾 Persistent configuration storage
 
 ## 🚀 Installation
@@ -49,6 +50,18 @@ cmdgenie update-llm google
 ```bash
 cmdgenie add-provider cohere cohere your-api-key command
 cmdgenie update-llm cohere
+```
+
+### Ollama (Local)
+```bash
+cmdgenie add-provider ollama ollama your-api-key llama3.1
+cmdgenie update-llm ollama
+```
+
+### Custom Provider
+```bash
+cmdgenie add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions
+cmdgenie update-llm mycustom
 ```
 
 ## 📖 Usage
@@ -106,6 +119,14 @@ cmdgenie --help
 2. Create an API key
 3. Run: `cmdgenie add-provider cohere cohere your-key command`
 
+### Ollama (Local)
+1. Install [Ollama](https://ollama.ai/) and pull a model
+2. Run: `cmdgenie add-provider ollama ollama your-api-key llama3.1`
+
+### Custom Provider
+1. Ensure your API is OpenAI-compatible
+2. Run: `cmdgenie add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions`
+
 ## 🛠️ Configuration
 
 Provider configurations are stored in `~/.cmdgenie/providers.json`:
@@ -128,6 +149,25 @@ Active provider is stored in `~/.cmdgenie/config.json`:
 {
   "activeProvider": "openai-default"
 }
+```
+
+### Provider Management
+
+```bash
+# Add a provider
+cmdgenie add-provider <name> <provider> <api-key> [model] [endpoint-url]
+
+# List configured providers
+cmdgenie list-providers
+
+# Show provider details
+cmdgenie show-provider <name>
+
+# Set active provider
+cmdgenie update-llm <provider-name>
+
+# Remove a provider
+cmdgenie remove-provider <name>
 ```
 
 ## 🔒 Security
@@ -174,7 +214,7 @@ The compiled output is in `dist/index.js`, which is what gets installed and exec
 npm run build
 
 # Run the compiled CLI
-node dist/index.js "find all directories"
+node dist/main.js "find all directories"
 
 # Or install globally
 npm link
