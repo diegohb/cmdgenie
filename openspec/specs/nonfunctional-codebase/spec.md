@@ -2,9 +2,7 @@
 
 ## Purpose
 This specification defines the non-functional requirements for the CmdGenie codebase, including development practices, code quality standards, testing, and architectural constraints.
-
 ## Requirements
-
 ### Requirement: Tech Stack
 The project SHALL use TypeScript for type safety and better development experience with a modular architecture.
 
@@ -227,9 +225,9 @@ The project SHALL maintain comprehensive test coverage for critical functionalit
 #### Scenario: Core module coverage
 - **GIVEN** source code in src/ modules
 - **WHEN** tests run with coverage
-- **THEN** ConfigManager has >90% coverage
-- **AND** Provider implementations have >80% coverage
-- **AND** CLI interface has >85% coverage
+- **THEN** ConfigManager has >95% coverage
+- **AND** Provider implementations have >95% coverage
+- **AND** CLI interface has >95% coverage
 
 #### Scenario: Test organization
 - **GIVEN** test directory structure
@@ -266,5 +264,42 @@ The project SHALL use Oxlint for automated code quality and style checking.
 - **WHEN** CI/CD runs `npm test`
 - **THEN** Linting is executed before tests
 - **AND** Build fails if linting violations exist
-- **AND** Linting runs on all supported platforms</content>
-<parameter name="filePath">openspec/specs/nonfunctional-codebase/spec.md
+- **AND** Linting runs on all supported platforms
+
+### Requirement: Contribution Guidelines Documentation
+The README.md SHALL include comprehensive contribution guidelines that document the project's development workflow, including branching strategy, commit message conventions, and OpenSpec workflow for proposing and implementing changes.
+
+#### Scenario: Branching strategy documented
+- **WHEN** contributor reads README.md
+- **THEN** branching strategy is clearly explained
+- **AND** includes how feature branches are created and named
+- **AND** describes when to create branches vs working on main
+
+#### Scenario: Commit conventions documented
+- **WHEN** contributor reads README.md
+- **THEN** commit message format and conventions are specified
+- **AND** examples of good commit messages are provided
+- **AND** guidelines for commit scope and content are included
+
+#### Scenario: OpenSpec workflow documented
+- **WHEN** contributor reads README.md
+- **THEN** OpenSpec process is explained (proposal.md, tasks.md, spec deltas)
+- **AND** how to create change proposals is described
+- **AND** validation and archiving steps are covered
+- **AND** links to OpenSpec documentation are provided
+
+### Requirement: Comprehensive Test Coverage Analysis
+The project SHALL perform automated analysis of test coverage to identify gaps and ensure comprehensive testing.
+
+#### Scenario: Coverage gap identification
+- **GIVEN** existing test suite and source code
+- **WHEN** coverage analysis is run
+- **THEN** detailed report identifies uncovered code paths
+- **AND** critical modules are flagged for additional testing
+
+#### Scenario: Automated coverage reporting
+- **GIVEN** Jest test execution with coverage
+- **WHEN** tests complete
+- **THEN** coverage reports are generated automatically
+- **AND** reports highlight modules below target coverage
+

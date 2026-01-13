@@ -168,3 +168,67 @@ describe('CustomProvider', () => {
         await expect(provider.Execute('list files', 'api-key', 'gpt-3.5-turbo')).rejects.toThrow('Custom provider requires an endpoint URL');
     });
 });
+
+import { ProviderRegistry } from '../../src/providers/registry';
+
+describe('ProviderRegistry', () => {
+    let registry: ProviderRegistry;
+
+    beforeEach(() => {
+        registry = new ProviderRegistry();
+    });
+
+    describe('GetProvider', () => {
+        it('should return provider instance for valid name', () => {
+            const provider = registry.GetProvider('openai');
+
+            expect(provider).toBeDefined();
+            expect(provider?.Name).toBe('openai');
+        });
+
+        it('should return null for invalid provider name', () => {
+            const provider = registry.GetProvider('invalid');
+
+            expect(provider).toBeNull();
+        });
+    });
+
+    describe('GetProviderNames', () => {
+        it('should return all registered provider names', () => {
+            const names = registry.GetProviderNames();
+
+            expect(names).toContain('openai');
+            expect(names).toContain('anthropic');
+            expect(names).toContain('google');
+            expect(names).toContain('cohere');
+            expect(names).toContain('ollama');
+            expect(names).toContain('custom');
+            expect(names.length).toBe(6);
+        });
+    });
+
+    describe('HasProvider', () => {
+        it('should return true for registered providers', () => {
+            expect(registry.HasProvider('openai')).toBe(true);
+            expect(registry.HasProvider('anthropic')).toBe(true);
+        });
+
+        it('should return false for unregistered providers', () => {
+            expect(registry.HasProvider('invalid')).toBe(false);
+        });
+    });
+
+    describe('GetDefaultModel', () => {
+        it('should return default model for valid provider', () => {
+            const model = registry.GetDefaultModel('openai');
+
+            expect(model).toBe('gpt-3.5-turbo');
+        });
+
+        it('should return empty string for invalid provider', () => {
+            const model = registry.GetDefaultModel('invalid');
+
+            expect(model).toBe('');
+        });
+    });
+});

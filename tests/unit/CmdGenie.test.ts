@@ -24,6 +24,9 @@ describe('CmdGenie', () => {
 
         // Setup ConfigManager mock
         const mockListProviders = jest.fn().mockReturnValue([]);
+        const mockAddProvider = jest.fn() as jest.MockedFunction<any>;
+        const mockRemoveProvider = jest.fn();
+        const mockGetProvider = jest.fn();
         mockConfigManager = {
             Config: {
                 activeProvider: 'myopenai'
@@ -32,10 +35,11 @@ describe('CmdGenie', () => {
             UpdateActiveProvider: jest.fn(),
             HasActiveProvider: jest.fn(),
             GetActiveProviderEntry: jest.fn(),
+            SaveConfig: jest.fn(),
             RegistryManager: {
-                AddProvider: jest.fn(),
-                RemoveProvider: jest.fn(),
-                GetProvider: jest.fn(),
+                AddProvider: mockAddProvider,
+                RemoveProvider: mockRemoveProvider,
+                GetProvider: mockGetProvider,
                 ListProviders: mockListProviders
             }
         } as any;
@@ -219,6 +223,172 @@ describe('CmdGenie', () => {
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('API Key: ✅ Set'));
 
             consoleSpy.mockRestore();
+        });
+    });
+
+    describe('AddProvider', () => {
+        it('should call ConfigManager RegistryManager AddProvider with success', () => {
+            (mockConfigManager.RegistryManager.AddProvider as jest.Mock).mockReturnValue(true);
+
+            cmdGenie.AddProvider('test-provider', 'openai', 'test-key', 'gpt-4');
+
+            expect(mockConfigManager.RegistryManager.AddProvider).toHaveBeenCalledWith('test-provider', 'openai', 'test-key', 'gpt-4', undefined);
+        });
+
+        it('should handle AddProvider failure', () => {
+            (mockConfigManager.RegistryManager.AddProvider as jest.Mock).mockReturnValue(false);
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+            cmdGenie.AddProvider('test-provider', 'openai', 'test-key', 'gpt-4');
+
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to add provider: test-provider');
+
+            consoleSpy.mockRestore();
+        });
+    });
+
+    describe('ListProviders', () => {
+        it('should list all providers when providers exist', () => {
+            (mockConfigManager.RegistryManager.ListProviders as jest.Mock).mockReturnValue(['provider1', 'provider2']);
+            (mockConfigManager.RegistryManager.GetProvider as jest.Mock)
+                .mockReturnValueOnce({
+                    name: 'provider1',
+                    provider: 'openai',
+                    apiKey: 'key1',
+                    model: 'gpt-4'
+                })
+                .mockReturnValueOnce({
+                    name: 'provider2',
+                    provider: 'anthropic',
+                    apiKey: 'key2',
+                    model: 'claude'
+                });
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+            cmdGenie.ListProviders();
+
+            expect(consoleSpy).toHaveBeenCalledWith('Configured providers:');
+            expect(consoleSpy).toHaveBeenCalledWith('  provider1: openai (gpt-4)');
+            expect(consoleSpy).toHaveBeenCalledWith('  provider2: anthropic (claude)');
+
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle no providers configured', () => {
+            (mockConfigManager.RegistryManager.ListProviders as jest.Mock).mockReturnValue([]);
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+            cmdGenie.ListProviders();
+
+            expect(consoleSpy).toHaveBeenCalledWith('No providers configured.');
+
+            consoleSpy.mockRestore();
+        });
+    });
+
+    describe('RemoveProvider', () => {
+        it('should call ConfigManager RegistryManager RemoveProvider with success', () => {
+            (mockConfigManager.RegistryManager.RemoveProvider as jest.Mock).mockReturnValue(true);
+
+            cmdGenie.RemoveProvider('test-provider');
+
+            expect(mockConfigManager.RegistryManager.RemoveProvider).toHaveBeenCalledWith('test-provider');
+        });
+
+        it('should handle RemoveProvider failure', () => {
+            (mockConfigManager.RegistryManager.RemoveProvider as jest.Mock).mockReturnValue(false);
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+            cmdGenie.RemoveProvider('test-provider');
+
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to remove provider: test-provider');
+
+            consoleSpy.mockRestore();
+        });
+    });
+
+    describe('ShowProvider', () => {
+        it('should display provider details when provider exists', () => {
+            (mockConfigManager.RegistryManager.GetProvider as jest.Mock).mockReturnValue({
+                name: 'test-provider',
+                provider: 'openai',
+                apiKey: 'test-key',
+                model: 'gpt-4',
+                endpointUrl: 'https://api.example.com'
+            });
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+            cmdGenie.ShowProvider('test-provider');
+
+            expect(consoleSpy).toHaveBeenCalledWith('Provider: test-provider');
+            expect(consoleSpy).toHaveBeenCalledWith('  Type: openai');
+            expect(consoleSpy).toHaveBeenCalledWith('  Model: gpt-4');
+            expect(consoleSpy).toHaveBeenCalledWith('  API Key: ✅ Set');
+            expect(consoleSpy).toHaveBeenCalledWith('  Endpoint: https://api.example.com');
+
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle provider not found', () => {
+            (mockConfigManager.RegistryManager.GetProvider as jest.Mock).mockReturnValue(undefined);
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+            cmdGenie.ShowProvider('nonexistent');
+
+            expect(consoleSpy).toHaveBeenCalledWith('Provider \'nonexistent\' not found');
+
+            consoleSpy.mockRestore();
+        });
+
+        it('should show API key not set when no key', () => {
+            (mockConfigManager.RegistryManager.GetProvider as jest.Mock).mockReturnValue({
+                name: 'test-provider',
+                provider: 'openai',
+                apiKey: '',
+                model: 'gpt-4'
+            });
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+            cmdGenie.ShowProvider('test-provider');
+
+            expect(consoleSpy).toHaveBeenCalledWith('  API Key: ❌ Not set');
+
+            consoleSpy.mockRestore();
+        });
+    });
+
+    describe('GenerateCommand additional scenarios', () => {
+        let consoleLogSpy: jest.SpyInstance;
+        let consoleErrorSpy: jest.SpyInstance;
+
+        beforeEach(() => {
+            consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+            consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+        });
+
+        afterEach(() => {
+            consoleLogSpy.mockRestore();
+            consoleErrorSpy.mockRestore();
+        });
+
+        it('should handle case when active provider is set but not found in registry', async () => {
+            mockConfigManager.HasActiveProvider.mockReturnValue(true);
+            mockConfigManager.GetActiveProviderEntry.mockReturnValue(undefined);
+
+            await cmdGenie.GenerateCommand('test prompt');
+
+            expect(consoleErrorSpy).toHaveBeenCalledWith('❌ Error generating command:', 'Active provider not found in registry');
+        });
+
+        it('should handle case when providers exist but none active', async () => {
+            mockConfigManager.HasActiveProvider.mockReturnValue(false);
+            (mockConfigManager.RegistryManager.ListProviders as jest.Mock).mockReturnValue(['provider1']);
+
+            await cmdGenie.GenerateCommand('test prompt');
+
+            expect(consoleErrorSpy).toHaveBeenCalledWith('❌ No active provider selected. Please choose one:');
+            expect(consoleLogSpy).toHaveBeenCalledWith('Available providers:', 'provider1');
+            expect(consoleLogSpy).toHaveBeenCalledWith('Set active: cmdgenie --update-llm <provider-name>');
         });
     });
 });

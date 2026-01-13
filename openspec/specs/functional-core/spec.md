@@ -64,5 +64,104 @@ The CLI SHALL provide commands for managing the provider registry.
 - **GIVEN** user wants to see provider details
 - **WHEN** user runs `--show-provider <name>`
 - **THEN** provider information is displayed
-- **AND** credentials are masked for security</content>
-<parameter name="filePath">openspec/specs/functional-core/spec.md
+- **AND** credentials are masked for security
+
+### Requirement: Ollama Provider Support
+The system SHALL support Ollama as a native provider for local LLM inference.
+
+#### Scenario: Ollama provider registration
+- **GIVEN** Ollama is running locally on default port
+- **WHEN** user configures Ollama as provider
+- **THEN** Ollama appears in supported providers list
+- **AND** Configuration accepts Ollama model names
+- **AND** API calls route to localhost:11434
+
+#### Scenario: Ollama command generation
+- **GIVEN** Ollama provider is configured with available model
+- **WHEN** user requests command generation
+- **THEN** API request is sent to Ollama generate endpoint
+- **AND** Response is parsed correctly
+- **AND** Generated command follows same cleaning rules
+
+#### Scenario: Ollama error handling
+- **GIVEN** Ollama service is not running
+- **WHEN** command generation is attempted
+- **THEN** connection error is handled gracefully
+- **AND** User receives helpful error message
+- **AND** Fallback suggestions are provided
+
+### Requirement: Local Model Compatibility
+The Ollama provider SHALL work with various local models available through Ollama.
+
+#### Scenario: Model selection
+- **GIVEN** user has multiple Ollama models installed
+- **WHEN** configuring Ollama provider
+- **THEN** any valid Ollama model name is accepted
+- **AND** Model availability is not pre-validated at config time
+- **AND** Runtime errors handle unavailable models
+
+#### Scenario: Offline operation
+- **GIVEN** Ollama provider configured and service running
+- **WHEN** user generates commands without internet
+- **THEN** commands are generated using local model
+- **AND** No external API calls are made
+- **AND** Performance depends on local hardware
+
+### Requirement: Custom LLM Provider Support
+The system SHALL allow users to register custom LLM providers with their own API endpoints, models, and authentication.
+
+#### Scenario: Custom provider registration
+- **GIVEN** user has a compatible LLM API endpoint
+- **WHEN** user runs `cmdgenie --add-provider custom <name> --endpoint <url> --model <model> --api-key <key>`
+- **THEN** custom provider is stored in provider registry
+- **AND** provider is available for selection and command generation
+- **AND** configuration persists across sessions
+
+#### Scenario: Custom provider usage
+- **GIVEN** custom provider is registered in registry
+- **WHEN** user selects custom provider and runs command generation
+- **THEN** API calls are made to custom endpoint
+- **AND** Custom model and authentication are used
+- **AND** Response parsing works with OpenAI-compatible format
+
+#### Scenario: Custom provider validation
+- **GIVEN** custom provider registration attempt
+- **WHEN** user provides invalid endpoint or missing required fields
+- **THEN** validation error is shown
+- **AND** Provider is not registered
+- **AND** Helpful error message guides user to correct format
+
+### Requirement: Custom Provider Registry Integration
+The provider registry SHALL support custom providers alongside built-in providers.
+
+#### Scenario: Registry storage
+- **GIVEN** custom provider registration
+- **WHEN** provider is added to registry
+- **THEN** custom providers are stored in ~/.cmdgenie/providers.json
+- **AND** Registry includes custom provider entries with endpoint, model, apiKey
+- **AND** Custom providers appear in --list-providers output
+
+#### Scenario: Provider activation
+- **GIVEN** custom provider registered in registry
+- **WHEN** user runs `--update-llm <custom-provider-name>`
+- **THEN** custom provider becomes active
+- **AND** Configuration references the selected custom provider
+- **AND** Command generation uses custom provider settings
+
+### Requirement: First-Run Setup Flow
+The system SHALL guide users through initial provider setup on first use.
+
+#### Scenario: First run detection
+- **GIVEN** no registry file exists
+- **WHEN** user attempts command generation
+- **THEN** setup flow is triggered
+- **AND** user is prompted to add at least one provider
+- **AND** command generation is blocked until setup completes
+
+#### Scenario: Migration from single provider
+- **GIVEN** existing config.json with single provider
+- **WHEN** application detects legacy config
+- **THEN** provider is migrated to registry format
+- **AND** backward compatibility is maintained
+- **AND** user is notified of migration</content>
+<parameter name="filePath">openspec/specs/nonfunctional-codebase/spec.md
