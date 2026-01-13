@@ -130,6 +130,15 @@ This project uses TypeScript. After installing dependencies:
 # Install dependencies
 npm install
 
+# Run linting
+npm run lint
+
+# Fix linting issues automatically (where possible)
+npm run lint:fix
+
+# Run tests (includes linting)
+npm test
+
 # Build TypeScript to JavaScript
 npm run build
 
