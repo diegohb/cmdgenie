@@ -7,9 +7,9 @@
         "cmdgenie": "./dist/index.js"
     },
     "scripts": {
-        "build": "tsc",
+        "build": "tsc && echo \"#!/usr/bin/env node\" > dist/index.js && type nul >> dist/index.js",
         "prebuild": "npm run clean",
-        "clean": "rm -rf dist",
+        "clean": "if exist dist rmdir /s /q dist",
         "dev": "tsc --watch",
         "prepublishOnly": "npm run build",
         "test": "echo \"Error: no test specified\" && exit 1"
@@ -50,6 +50,7 @@
     },
     "homepage": "https://cmdgenie.github.io/cmdgenie/",
     "files": [
+        "src/",
         "index.ts",
         "dist/index.js",
         "dist/index.d.ts",

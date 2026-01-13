@@ -7,7 +7,7 @@ CmdGenie is an AI-powered command line tool that transforms natural language req
 - **Runtime**: Node.js >=14.0.0
 - **Language**: TypeScript (compiled to JavaScript)
 - **Package Manager**: npm
-- **Architecture**: Single-file CLI tool
+- **Architecture**: Modular source structure (`src/` directory)
 - **Cross-platform**: Uses `os.platform()` for OS detection
 
 ## Project Conventions
@@ -15,8 +15,9 @@ CmdGenie is an AI-powered command line tool that transforms natural language req
 ### Code Style
 See [AGENTS.md](../AGENTS.md) for comprehensive code style guidelines including:
 - **Note**: AGENTS.md contains detailed code style patterns, TypeScript guidelines, naming conventions, and architectural patterns. This file defers to AGENTS.md to avoid duplication and serve as project-specific context.
-- Import patterns (ES6 imports, TypeScript)
-- Naming conventions (PascalCase classes/interfaces, camelCase methods, UPPER_SNAKE_CASE constants)
+- Import patterns (ES6 imports, modular structure)
+- Naming conventions (PascalCase public, underscore+pascalCase private, UPPER_SNAKE_CASE constants)
+- Access modifiers (explicit public/private for all class members)
 - Error handling patterns
 - Async/await usage
 - Type annotations and interfaces
@@ -25,9 +26,10 @@ See [AGENTS.md](../AGENTS.md) for comprehensive code style guidelines including:
 
 ### Architecture Patterns
 See [AGENTS.md](../AGENTS.md) for architecture details:
-- Single `CmdGenie` class encapsulating all functionality
-- Dedicated methods per LLM provider (`callOpenAI`, `callAnthropic`, etc.)
-- Config management with load/save methods
+- Modular `src/` directory structure (types, config, providers, cli)
+- ConfigManager class for configuration management
+- Provider interface and registry pattern for LLM providers
+- CmdGenie class for CLI interface
 - Interactive readline for command execution confirmation
 - Config stored in `~/.cmdgenie/config.json`
 - OS-aware command generation
@@ -40,7 +42,7 @@ See [AGENTS.md](../AGENTS.md) for architecture details:
 - Verify cross-platform behavior on macOS, Windows, Linux
 
 ### Git Workflow
-- Feature branches for changes (e.g., `add-new-provider`, `fix-command-cleaning`)
+- Feature branches for changes (e.g., `add-new-provider`, `refactor-modular-structure`)
 - Commit messages should be concise and descriptive
 - No automated CI/CD for testing (manual testing required)
 - GitHub Actions used only for docs deployment to GitHub Pages
@@ -53,13 +55,15 @@ See [AGENTS.md](../AGENTS.md) for architecture details:
 - **Command Cleaning**: AI responses may include markdown formatting that needs stripping
 
 ## Important Constraints
-- **Single-file architecture**: Keep all code in `index.ts` - no modularization
+- **Modular architecture**: All source code in `src/` directory with organized modules
 - **TypeScript required**: Compile to JavaScript with `npm run build`
 - **No test framework**: Manual CLI testing only
 - **No linting**: Follow existing code style and TypeScript best practices
 - **Node.js >=14.0.0**: Minimum required version
 - **Security**: Never log API keys, validate providers, use safe config storage
 - **Shebang required**: `#!/usr/bin/env node` at top of compiled `dist/index.js` for CLI execution
+- **Explicit access modifiers**: All class members must have explicit public or private modifiers
+- **Naming conventions**: PascalCase for public, underscore+pascalCase for private members
 
 ## External Dependencies
 - **OpenAI API**: https://api.openai.com/v1/chat/completions
