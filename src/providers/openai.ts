@@ -2,6 +2,7 @@ import { Provider } from './base';
 import {
     OPENAI_URL,
     OPENAI_MODEL,
+    SYSTEM_PROMPT,
     MAX_TOKENS,
     TEMPERATURE,
     GetOS,
@@ -25,11 +26,7 @@ export class OpenAIProvider implements Provider {
                 messages: [
                     {
                         role: 'system',
-                        content: `You are a command line expert. Generate only the exact command(s) needed for the user's request.
-Respond with ONLY the command(s), no explanations or formatting.
-If multiple commands are needed, separate them with &&.
-Detect the operating system context and provide appropriate commands.
-Current OS: ${GetOS()}, Current Shell: ${GetShell()}`
+                        content: SYSTEM_PROMPT.replace('{os}', GetOS()).replace('{shell}', GetShell())
                     },
                     { role: 'user', content: prompt }
                 ],

@@ -2,6 +2,7 @@ import { Provider } from './base';
 import {
     OLLAMA_URL,
     OLLAMA_MODEL,
+    SYSTEM_PROMPT,
     GetOS,
     GetShell,
     OllamaResponse
@@ -12,11 +13,7 @@ export class OllamaProvider implements Provider {
 
     public async Execute(prompt: string, _apiKey: string, model: string, endpointUrl?: string): Promise<string> {
         const url = endpointUrl || OLLAMA_URL;
-        const fullPrompt = `You are a command line expert. Generate only the exact command(s) needed for the user's request.
-Respond with ONLY the command(s), no explanations or formatting.
-If multiple commands are needed, separate them with &&.
-Detect the operating system context and provide appropriate commands.
-Current OS: ${GetOS()}, Current Shell: ${GetShell()}
+        const fullPrompt = `${SYSTEM_PROMPT.replace('{os}', GetOS()).replace('{shell}', GetShell())}
 
 ${prompt}`;
 

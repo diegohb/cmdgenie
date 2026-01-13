@@ -63,6 +63,13 @@ export const GOOGLE_URL: string = 'https://generativelanguage.googleapis.com/v1b
 export const COHERE_URL: string = 'https://api.cohere.ai/v1/generate';
 export const OLLAMA_URL: string = 'http://localhost:11434/api/generate';
 
+export const SYSTEM_PROMPT: string = `You are a command line expert. Generate only the exact command(s) needed for the user's request.
+Respond with ONLY the command(s), no explanations or formatting.
+Do not include any reasoning, thinking, or internal monologue content.
+If multiple commands are needed, separate them with &&.
+Detect the operating system context and provide appropriate commands.
+Current OS: {os}, Current Shell: {shell}`;
+
 const MAX_TOKENS: number = 150;
 const TEMPERATURE: number = 0.1;
 const COHERE_MAX_TOKENS: number = 100;

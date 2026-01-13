@@ -343,12 +343,13 @@ Current OS: ${GetOS()}, Current Shell: ${GetShell()}`
 ```
 
 ### System Prompts
-Include OS and shell detection for contextual command generation:
+Include OS and shell detection for contextual command generation, and explicitly request omission of reasoning content:
 ```javascript
 {
     role: 'system',
     content: `You are a command line expert. Generate only the exact command(s) needed for the user's request.
 Respond with ONLY the command(s), no explanations or formatting.
+Do not include any reasoning, thinking, or internal monologue content.
 If multiple commands are needed, separate them with &&.
 Detect the operating system and shell context and provide appropriate commands.
 Current OS: ${GetOS()}, Current Shell: ${GetShell()}`
@@ -356,9 +357,21 @@ Current OS: ${GetOS()}, Current Shell: ${GetShell()}`
 ```
 
 ### Command Cleaning
-Clean AI responses before execution:
+Clean AI responses before execution, including reasoning content removal:
 ```javascript
-command = command.replace(/```[\s\S]*?```/g, '').replace(/`/g, '').trim();
+// Remove code block formatting
+let cleaned = response.replace(/```[\s\S]*?```/g, '').replace(/`/g, '');
+
+// Remove reasoning/thinking tags (various formats)
+cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '');
+cleaned = cleaned.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
+cleaned = cleaned.replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '');
+cleaned = cleaned.replace(/<internal>[\s\S]*?<\/internal>/gi, '');
+
+// Remove any remaining XML-like tags that might contain reasoning
+cleaned = cleaned.replace(/<\w+>[\s\S]*?<\/\w+>/gi, '');
+
+command = cleaned.trim();
 ```
 
 ### Interactive Execution

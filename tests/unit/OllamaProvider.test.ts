@@ -88,6 +88,7 @@ describe('OllamaProvider', () => {
             const body = JSON.parse(callArgs.body as string);
 
             expect(body.prompt).toContain('You are a command line expert');
+            expect(body.prompt).toContain('Do not include any reasoning, thinking, or internal monologue content');
             expect(body.prompt).toContain('Current OS:');
             expect(body.prompt).toContain(mockPrompt);
             expect(body.stream).toBe(false);

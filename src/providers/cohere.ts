@@ -1,5 +1,5 @@
 import { Provider } from './base';
-import { COHERE_URL, COHERE_MODEL, COHERE_MAX_TOKENS, TEMPERATURE, GetOS, GetShell, CohereResponse } from '../types';
+import { COHERE_URL, COHERE_MODEL, SYSTEM_PROMPT, COHERE_MAX_TOKENS, TEMPERATURE, GetOS, GetShell, CohereResponse } from '../types';
 
 export class CohereProvider implements Provider {
     public readonly Name: string = 'cohere';
@@ -14,10 +14,7 @@ export class CohereProvider implements Provider {
             },
             body: JSON.stringify({
                 model: model || COHERE_MODEL,
-                prompt: `You are a command line expert. Generate only the exact command(s) needed for: "${prompt}".
-Respond with ONLY the command(s), no explanations.
-If multiple commands needed, separate with &&.
-Current OS: ${GetOS()}, Current Shell: ${GetShell()}
+                prompt: `${SYSTEM_PROMPT.replace('{os}', GetOS()).replace('{shell}', GetShell()).replace('for the user\'s request', `for: "${prompt}"`)}
 
 Command:`,
                 max_tokens: COHERE_MAX_TOKENS,

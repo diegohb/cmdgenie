@@ -2,6 +2,7 @@ import { Provider } from './base';
 import {
     ANTHROPIC_URL,
     ANTHROPIC_MODEL,
+    SYSTEM_PROMPT,
     MAX_TOKENS,
     GetOS,
     GetShell,
@@ -26,10 +27,7 @@ export class AnthropicProvider implements Provider {
                 messages: [
                     {
                         role: 'user',
-                        content: `You are a command line expert. Generate only the exact command(s) needed for: "${prompt}".
-Respond with ONLY the command(s), no explanations.
-If multiple commands needed, separate with &&.
-Current OS: ${GetOS()}, Current Shell: ${GetShell()}`
+                        content: `${SYSTEM_PROMPT.replace('{os}', GetOS()).replace('{shell}', GetShell()).replace('for the user\'s request', `for: "${prompt}"`)}`
                     }
                 ]
             })

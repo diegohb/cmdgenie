@@ -101,6 +101,7 @@ describe('OpenAIProvider', () => {
             expect(body.messages).toHaveLength(2);
             expect(body.messages[0].role).toBe('system');
             expect(body.messages[0].content).toContain('You are a command line expert');
+            expect(body.messages[0].content).toContain('Do not include any reasoning, thinking, or internal monologue content');
             expect(body.messages[0].content).toContain('Current OS:');
             expect(body.messages[0].content).toContain('Current Shell:');
             expect(body.messages[1].role).toBe('user');

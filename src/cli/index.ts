@@ -1,6 +1,7 @@
 import * as readline from 'readline';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import * as os from 'os';
 import { ConfigManager } from '../config';
 import { ProviderRegistry } from '../providers/registry';
 import { Config } from '../types';
@@ -111,7 +112,10 @@ export class CmdGenie {
                 activeEntry.endpointUrl
             );
 
-            command = command.replace(/```[\s\S]*?```/g, '').replace(/`/g, '').trim();
+            command = this._CleanResponse(command);
+
+            // Validate response for potential reasoning content
+            this._ValidateResponse(command);
 
             console.log(`\n💡 Generated command: ${command}`);
 
@@ -124,7 +128,13 @@ export class CmdGenie {
                 if (answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {
                     try {
                         console.log('\n📋 Executing...');
-                        const { stdout, stderr } = await execAsync(command);
+                        const shell = this._GetShell();
+                        let execCommand = command;
+                        if (shell === 'powershell.exe') {
+                            // Wrap PowerShell commands with -Command for proper execution
+                            execCommand = `powershell.exe -Command "${command.replace(/"/g, '""')}"`;
+                        }
+                        const { stdout, stderr } = await execAsync(execCommand, { shell });
                         if (stdout) console.log(stdout);
                         if (stderr) console.error(stderr);
                     } catch (error) {
@@ -136,6 +146,58 @@ export class CmdGenie {
 
         } catch (error) {
             console.error('❌ Error generating command:', (error as Error).message);
+        }
+    }
+
+    private _GetShell(): string {
+        if (os.platform() === 'win32') {
+            // Check if PowerShell is the active shell
+            if (process.env.PSModulePath) {
+                return 'powershell.exe';
+            }
+            // Fallback to cmd.exe
+            return process.env.ComSpec || 'cmd.exe';
+        } else {
+            // Unix-like systems
+            return process.env.SHELL || '/bin/bash';
+        }
+    }
+
+    private _CleanResponse(response: string): string {
+        // Extract content from code blocks, fallback to removing backticks if no code blocks
+        let cleaned = response.replace(/```[\s\S]*?```/g, (match) => {
+            // Extract content between ```
+            const content = match.replace(/^```[\s\S]*?\n?/, '').replace(/\n?```$/, '');
+            return content;
+        }).replace(/`/g, '');
+
+        // Remove reasoning/thinking tags (various formats)
+        cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '');
+        cleaned = cleaned.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
+        cleaned = cleaned.replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '');
+        cleaned = cleaned.replace(/<internal>[\s\S]*?<\/internal>/gi, '');
+
+        // Remove any remaining XML-like tags that might contain reasoning
+        cleaned = cleaned.replace(/<\w+>[\s\S]*?<\/\w+>/gi, '');
+
+        return cleaned.trim();
+    }
+
+    private _ValidateResponse(response: string): void {
+        // Check for common reasoning indicators
+        const reasoningPatterns = [
+            /think/i,
+            /reason/i,
+            /consider/i,
+            /analyze/i,
+            /internal/i,
+            /monolog/i
+        ];
+
+        const hasReasoning = reasoningPatterns.some(pattern => pattern.test(response));
+
+        if (hasReasoning) {
+            console.warn('⚠️  Warning: Response may contain reasoning content that was not fully cleaned');
         }
     }
 

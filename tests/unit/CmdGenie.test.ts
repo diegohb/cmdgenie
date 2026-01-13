@@ -176,7 +176,7 @@ describe('CmdGenie', () => {
             expect(consoleErrorSpy).toHaveBeenCalledWith('❌ Error generating command:', 'API Error');
         });
 
-        it.skip('should clean markdown from command response', async () => {
+        it('should clean markdown from command response', async () => {
             mockConfigManager.HasActiveProvider.mockReturnValue(true);
             mockConfigManager.GetActiveProviderEntry.mockReturnValue({
                 name: 'myopenai',
@@ -198,9 +198,64 @@ describe('CmdGenie', () => {
 
             await cmdGenie.GenerateCommand('list files');
 
-            expect(mockProvider.Execute).toHaveBeenCalledWith('list files', 'test-key', 'gpt-3.5-turbo');
+            expect(mockProvider.Execute).toHaveBeenCalledWith('list files', 'test-key', 'gpt-3.5-turbo', undefined);
             // The command should be cleaned of markdown
             expect(consoleLogSpy).toHaveBeenCalledWith('\n💡 Generated command: ls -la');
+        });
+
+        it('should clean reasoning tags from command response', async () => {
+            mockConfigManager.HasActiveProvider.mockReturnValue(true);
+            mockConfigManager.GetActiveProviderEntry.mockReturnValue({
+                name: 'myopenai',
+                provider: 'openai',
+                apiKey: 'test-key',
+                model: 'gpt-3.5-turbo'
+            });
+            const mockProvider = {
+                Name: 'openai',
+                Execute: jest.fn().mockResolvedValue('<think>I need to list files</think>ls -la')
+            };
+            mockProviderRegistry.GetProvider.mockReturnValue(mockProvider as any);
+
+            const mockRl = {
+                question: jest.fn(),
+                close: jest.fn()
+            };
+            mockedReadline.createInterface.mockReturnValue(mockRl as any);
+
+            await cmdGenie.GenerateCommand('list files');
+
+            // The reasoning content should be removed
+            expect(consoleLogSpy).toHaveBeenCalledWith('\n💡 Generated command: ls -la');
+        });
+
+        it('should warn when reasoning content is detected in response', async () => {
+            mockConfigManager.HasActiveProvider.mockReturnValue(true);
+            mockConfigManager.GetActiveProviderEntry.mockReturnValue({
+                name: 'myopenai',
+                provider: 'openai',
+                apiKey: 'test-key',
+                model: 'gpt-3.5-turbo'
+            });
+            const mockProvider = {
+                Name: 'openai',
+                Execute: jest.fn().mockResolvedValue('ls -la but I think this might not work')
+            };
+            mockProviderRegistry.GetProvider.mockReturnValue(mockProvider as any);
+
+            const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+            const mockRl = {
+                question: jest.fn(),
+                close: jest.fn()
+            };
+            mockedReadline.createInterface.mockReturnValue(mockRl as any);
+
+            await cmdGenie.GenerateCommand('list files');
+
+            expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️  Warning: Response may contain reasoning content that was not fully cleaned');
+
+            consoleWarnSpy.mockRestore();
         });
     });
 
