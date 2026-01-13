@@ -3,6 +3,7 @@ import {
     OLLAMA_URL,
     OLLAMA_MODEL,
     GetOS,
+    GetShell,
     OllamaResponse
 } from '../types';
 
@@ -15,7 +16,7 @@ export class OllamaProvider implements Provider {
 Respond with ONLY the command(s), no explanations or formatting.
 If multiple commands are needed, separate them with &&.
 Detect the operating system context and provide appropriate commands.
-Current OS: ${GetOS()}
+Current OS: ${GetOS()}, Current Shell: ${GetShell()}
 
 ${prompt}`;
 
