@@ -6,7 +6,7 @@ These instructions are for AI assistants working in this project.
 Always open `@/openspec/AGENTS.md` when the request:
 - Mentions planning or proposals (words like proposal, spec, change, plan)
 - Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
-- Sounds ambiguous and you need the authoritative spec before coding
+- Sounds ambiguous and you need to authoritative spec before coding
 
 Use `@/openspec/AGENTS.md` to learn:
 - How to create and apply change proposals
@@ -28,29 +28,43 @@ This file contains guidelines for AI agents working on the CmdGenie codebase.
 npm install
 ```
 
+### Build
+```bash
+# Compile TypeScript to JavaScript
+npm run build
+
+# Watch mode for development
+npm run dev
+
+# Clean build output
+npm run clean
+```
+
 ### Manual Testing
 ```bash
-# Run CLI directly
-node index.js "find all directories"
+# Build first, then run CLI
+npm run build
+node dist/index.js "find all directories"
 
-# Install globally for testing
+# Or after global installation
 npm link
 cmdgenie "show disk usage"
 ```
 
 ### Update LLM Provider
 ```bash
-node index.js --update-llm openai sk-your-key
-node index.js --update-llm anthropic your-key claude-3-haiku-20240307
-node index.js --update-llm google your-key gemini-pro
-node index.js --update-llm cohere your-key
+node dist/index.js --update-llm openai sk-your-key
+node dist/index.js --update-llm anthropic your-key claude-3-haiku-20240307
+node dist/index.js --update-llm google your-key gemini-pro
+node dist/index.js --update-llm cohere your-key
 ```
 
 ## Architecture Overview
 
-CmdGenie is a single-file CLI tool using Node.js with the following structure:
+CmdGenie is a single-file CLI tool using Node.js and TypeScript with the following structure:
 
-- **Entry Point**: `index.js` (shebang `#!/usr/bin/env node`)
+- **Entry Point**: `index.ts` (TypeScript source)
+- **Compiled Output**: `dist/index.js` (compiled JavaScript with shebang)
 - **Class**: `CmdGenie` class encapsulates all functionality
 - **Config**: Stored in `~/.cmdgenie/config.json`
 - **LLM Providers**: OpenAI, Anthropic, Google, Cohere
@@ -59,28 +73,31 @@ CmdGenie is a single-file CLI tool using Node.js with the following structure:
 ## Code Style Guidelines
 
 ### Import Patterns
-Use CommonJS require statements:
-```javascript
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { exec } = require('child_process');
-const { promisify } = require('util');
+Use ES6 import statements (TypeScript):
+```typescript
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import * as readline from 'readline';
 ```
 
 Promisify async utilities:
-```javascript
+```typescript
 const execAsync = promisify(exec);
 ```
 
 ### Class Structure
 Define class with constructor for config initialization:
-```javascript
+```typescript
 class CmdGenie {
+    public config: Config;
+
     constructor() {
         this.config = this.loadConfig();
     }
-    
+
     // Methods follow...
 }
 ```
@@ -90,6 +107,37 @@ class CmdGenie {
 - **Method names**: camelCase (`loadConfig`, `generateCommand`, `callOpenAI`)
 - **Constants**: UPPER_SNAKE_CASE (`CONFIG_DIR`, `CONFIG_FILE`)
 - **Variables**: camelCase (`provider`, `apiKey`, `model`)
+- **Interfaces**: PascalCase with descriptive names (`Config`, `ProviderConfig`)
+
+### TypeScript Patterns
+Define interfaces for type safety:
+```typescript
+interface Config {
+    provider: string;
+    apiKey: string | null;
+    model: string;
+}
+
+interface ProviderConfig {
+    defaultModel: string;
+}
+```
+
+Use type annotations for all function parameters and return types:
+```typescript
+async loadConfig(): Config {
+    // ...
+}
+
+async updateLLM(provider: string, apiKey: string, model: string | null = null): Promise<void> {
+    // ...
+}
+```
+
+Use type assertions for external API responses:
+```typescript
+const data = await response.json() as OpenAIResponse;
+```
 
 ### Error Handling
 Wrap operations in try-catch blocks with console.error:
@@ -181,12 +229,12 @@ async call[Provider](prompt) {
         headers: { /* headers */ },
         body: JSON.stringify({ /* payload */ })
     });
-    
+
     const data = await response.json();
     if (!response.ok) {
         throw new Error(data.error?.message || '[Provider] API error');
     }
-    
+
     return data.command_path.trim();
 }
 ```
@@ -196,8 +244,8 @@ Include OS detection and strict output formatting:
 ```javascript
 {
     role: 'system',
-    content: `You are a command line expert. Generate only the exact command(s) needed for the user's request. 
-Respond with ONLY the command(s), no explanations or formatting. 
+    content: `You are a command line expert. Generate only the exact command(s) needed for the user's request.
+Respond with ONLY the command(s), no explanations or formatting.
 If multiple commands are needed, separate them with &&.
 Detect the operating system context and provide appropriate commands.
 Current OS: ${os.platform()}`
@@ -261,8 +309,10 @@ main().catch(console.error);
 
 ## File Organization
 
-- **Keep single-file architecture** (`index.js` only)
+- **Keep single-file architecture** (`index.ts` only)
+- **Compiled output** in `dist/` directory
 - **Constants at top** (CONFIG_DIR, CONFIG_FILE)
+- **Interface definitions** before class
 - **Class definition** after constants
 - **Main execution** at bottom
 - **No tests or linting** - manual testing only
@@ -270,17 +320,18 @@ main().catch(console.error);
 ## Adding New LLM Providers
 
 1. Add provider to `providers` object in `updateLLM()`
-2. Create `call[ProviderName]()` method following existing pattern
-3. Add case in `generateCommand()` switch statement
-4. Update help text in `showHelp()`
-5. Test with manual CLI commands
+2. Create `call[ProviderName]()` method with type annotations
+3. Define interfaces for new provider's API response
+4. Add case in `generateCommand()` switch statement
+5. Update help text in `showHelp()`
+6. Test with manual CLI commands
 
 ## Important Notes
 
 - **Node.js version**: >=14.0.0
-- **No TypeScript** - plain JavaScript
+- **TypeScript enabled** - compile with `npm run build`
 - **No test framework** - manual testing via CLI
-- **No linting** - follow existing code style
+- **No linting** - follow existing code style and TypeScript best practices
 - **Cross-platform** - always use `os.platform()` in prompts
-- **Shebang required**: `#!/usr/bin/env node` at top of index.js
-- **Single file** - maintain all code in index.js
+- **Shebang required**: `#!/usr/bin/env node` at top of compiled `dist/index.js`
+- **Single file** - maintain all code in index.ts

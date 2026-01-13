@@ -14,6 +14,7 @@ CmdGenie is an AI-powered command line tool that transforms natural language req
 
 ### Code Style
 See [AGENTS.md](../AGENTS.md) for comprehensive code style guidelines including:
+- **Note**: AGENTS.md contains detailed code style patterns, TypeScript guidelines, naming conventions, and architectural patterns. This file defers to AGENTS.md to avoid duplication and serve as project-specific context.
 - Import patterns (ES6 imports, TypeScript)
 - Naming conventions (PascalCase classes/interfaces, camelCase methods, UPPER_SNAKE_CASE constants)
 - Error handling patterns
