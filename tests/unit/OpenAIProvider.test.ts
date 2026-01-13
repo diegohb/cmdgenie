@@ -79,7 +79,7 @@ describe('OpenAIProvider', () => {
             expect(result).toBe('dir');
         });
 
-        it('should include system message with OS context', async () => {
+        it('should include system message with OS and shell context', async () => {
             const mockResponse: OpenAIResponse = {
                 choices: [{
                     message: {
@@ -102,6 +102,7 @@ describe('OpenAIProvider', () => {
             expect(body.messages[0].role).toBe('system');
             expect(body.messages[0].content).toContain('You are a command line expert');
             expect(body.messages[0].content).toContain('Current OS:');
+            expect(body.messages[0].content).toContain('Current Shell:');
             expect(body.messages[1].role).toBe('user');
             expect(body.messages[1].content).toBe(mockPrompt);
         });

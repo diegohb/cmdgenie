@@ -3,6 +3,7 @@ import {
     MAX_TOKENS,
     TEMPERATURE,
     GetOS,
+    GetShell,
     OpenAIResponse
 } from '../types';
 
@@ -29,7 +30,7 @@ export class CustomProvider implements Provider {
 Respond with ONLY the command(s), no explanations or formatting. 
 If multiple commands are needed, separate them with &&.
 Detect the operating system context and provide appropriate commands.
-Current OS: ${GetOS()}`
+Current OS: ${GetOS()}, Current Shell: ${GetShell()}`
                     },
                     { role: 'user', content: prompt }
                 ],

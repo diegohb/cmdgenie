@@ -38,6 +38,19 @@ export function GetOS(): string {
     return os.platform();
 }
 
+export function GetShell(): string {
+    if (os.platform() === 'win32') {
+        // Check if running in PowerShell
+        if (process.env.PSModulePath) {
+            return 'powershell';
+        }
+        return 'cmd';
+    } else {
+        // Unix-like systems
+        return process.env.SHELL?.split('/').pop() || 'bash';
+    }
+}
+
 export const OPENAI_MODEL: string = 'gpt-3.5-turbo';
 export const ANTHROPIC_MODEL: string = 'claude-3-haiku-20240307';
 export const GOOGLE_MODEL: string = 'gemini-pro';

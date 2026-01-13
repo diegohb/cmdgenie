@@ -4,6 +4,7 @@ import {
     ANTHROPIC_MODEL,
     MAX_TOKENS,
     GetOS,
+    GetShell,
     AnthropicResponse
 } from '../types';
 
@@ -28,7 +29,7 @@ export class AnthropicProvider implements Provider {
                         content: `You are a command line expert. Generate only the exact command(s) needed for: "${prompt}".
 Respond with ONLY the command(s), no explanations.
 If multiple commands needed, separate with &&.
-Current OS: ${GetOS()}`
+Current OS: ${GetOS()}, Current Shell: ${GetShell()}`
                     }
                 ]
             })
