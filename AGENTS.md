@@ -366,13 +366,9 @@ async function main(): Promise<void> {
         return;
     }
 
-    if (args[0] === '--update-llm') {
-        if (args.length < 3) {
-            console.error('❌ Usage: cmdgenie --update-llm <provider> <api-key> [model]');
-            return;
-        }
-        await genie.UpdateLLM(args[1], args[2], args[3]);
-        return;
+    // Note: CLI now uses Commander.js with structured commands
+    // update-llm command: cmdgenie update-llm <provider-name>
+    // add-provider command: cmdgenie add-provider <name> <provider> <api-key> [model] [endpoint]
     }
 
     const prompt = args.join(' ').replace(/^["']|["']$/g, '');

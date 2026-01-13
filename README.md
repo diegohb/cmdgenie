@@ -25,26 +25,30 @@ npm install -g cmdgenie
 
 ## 🔧 Setup
 
-First, configure your preferred LLM provider:
+First, configure your LLM providers:
 
 ### OpenAI
 ```bash
-cmdgenie --update-llm openai sk-your-api-key-here
+cmdgenie add-provider openai openai sk-your-api-key-here
+cmdgenie update-llm openai
 ```
 
 ### Anthropic (Claude)
 ```bash
-cmdgenie --update-llm anthropic your-api-key claude-3-haiku-20240307
+cmdgenie add-provider anthropic anthropic your-api-key claude-3-haiku-20240307
+cmdgenie update-llm anthropic
 ```
 
 ### Google (Gemini)
 ```bash
-cmdgenie --update-llm google your-api-key gemini-pro
+cmdgenie add-provider google google your-api-key gemini-pro
+cmdgenie update-llm google
 ```
 
 ### Cohere
 ```bash
-cmdgenie --update-llm cohere your-api-key command
+cmdgenie add-provider cohere cohere your-api-key command
+cmdgenie update-llm cohere
 ```
 
 ## 📖 Usage
@@ -85,32 +89,44 @@ cmdgenie --help
 ### OpenAI
 1. Go to [OpenAI API Keys](https://platform.openai.com/api-keys)
 2. Create a new API key
-3. Run: `cmdgenie --update-llm openai sk-your-key`
+3. Run: `cmdgenie add-provider openai openai sk-your-key`
 
 ### Anthropic
 1. Go to [Anthropic Console](https://console.anthropic.com/)
 2. Create an API key
-3. Run: `cmdgenie --update-llm anthropic your-key`
+3. Run: `cmdgenie add-provider anthropic anthropic your-key claude-3-haiku-20240307`
 
 ### Google AI
 1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
 2. Create an API key
-3. Run: `cmdgenie --update-llm google your-key`
+3. Run: `cmdgenie add-provider google google your-key gemini-pro`
 
 ### Cohere
 1. Go to [Cohere Dashboard](https://dashboard.cohere.ai/api-keys)
 2. Create an API key
-3. Run: `cmdgenie --update-llm cohere your-key`
+3. Run: `cmdgenie add-provider cohere cohere your-key command`
 
 ## 🛠️ Configuration
 
-Configuration is stored in `~/.cmdgenie/config.json`:
+Provider configurations are stored in `~/.cmdgenie/providers.json`:
 
 ```json
 {
-  "provider": "openai",
-  "apiKey": "your-api-key",
-  "model": "gpt-3.5-turbo"
+  "openai-default": {
+    "name": "openai-default",
+    "provider": "openai",
+    "apiKey": "your-api-key",
+    "model": "gpt-3.5-turbo",
+    "endpointUrl": null
+  }
+}
+```
+
+Active provider is stored in `~/.cmdgenie/config.json`:
+
+```json
+{
+  "activeProvider": "openai-default"
 }
 ```
 
