@@ -61,13 +61,20 @@ node dist/index.js --update-llm cohere your-key
 
 ## Architecture Overview
 
-CmdGenie is a single-file CLI tool using Node.js and TypeScript with the following structure:
+CmdGenie is a modular CLI tool using Node.js and TypeScript with the following structure:
 
-- **Entry Point**: `index.ts` (TypeScript source)
+- **Source Directory**: `src/` (TypeScript source modules)
 - **Compiled Output**: `dist/index.js` (compiled JavaScript with shebang)
-- **Class**: `CmdGenie` class encapsulates all functionality
+- **Modules**:
+  - `src/types/` - Type definitions (Config, ProviderConfig, provider responses)
+  - `src/config/` - Configuration management (ConfigManager class)
+  - `src/providers/` - LLM provider implementations (OpenAI, Anthropic, Google, Cohere)
+  - `src/cli/` - CLI interface (CmdGenie class)
+  - `src/index.ts` - Main entry point and barrel exports
+- **Entry Point**: `index.ts` (exports from src/)
+- **Class**: `CmdGenie` class encapsulates CLI functionality
 - **Config**: Stored in `~/.cmdgenie/config.json`
-- **LLM Providers**: OpenAI, Anthropic, Google, Cohere
+- **LLM Providers**: OpenAI, Anthropic, Google, Cohere (modular implementations)
 - **Cross-Platform**: Uses `os.platform()` to detect OS
 
 ## Code Style Guidelines
@@ -89,47 +96,67 @@ const execAsync = promisify(exec);
 ```
 
 ### Class Structure
-Define class with constructor for config initialization:
+Define class with constructor and explicit access modifiers:
 ```typescript
-class CmdGenie {
-    public config: Config;
+export class CmdGenie {
+    private readonly _configManager: ConfigManager;
+    private readonly _providerRegistry: ProviderRegistry;
 
     constructor() {
-        this.config = this.loadConfig();
+        this._configManager = new ConfigManager();
+        this._providerRegistry = new ProviderRegistry();
     }
 
-    // Methods follow...
+    public get Config(): Config {
+        return this._configManager.Config;
+    }
+
+    public async GenerateCommand(prompt: string): Promise<void> {
+        // ...
+    }
+
+    private _CleanResponse(response: string): string {
+        // ...
+    }
 }
 ```
 
 ### Naming Conventions
-- **Class names**: PascalCase (`CmdGenie`)
-- **Method names**: camelCase (`loadConfig`, `generateCommand`, `callOpenAI`)
-- **Constants**: UPPER_SNAKE_CASE (`CONFIG_DIR`, `CONFIG_FILE`)
+- **Class names**: PascalCase (`CmdGenie`, `ConfigManager`, `OpenAIProvider`)
+- **Public method names**: PascalCase (`GenerateCommand`, `LoadConfig`, `SaveConfig`)
+- **Private/internal method names**: underscore+pascalCase (`_LoadConfig`, `_callOpenAI`, `_validateConfig`)
+- **Public property names**: PascalCase (`Config`, `Provider`, `Model`)
+- **Private/internal property names**: underscore+pascalCase (`_config`, `_providerRegistry`, `_apiKey`)
+- **Constants**: UPPER_SNAKE_CASE (`CONFIG_DIR`, `CONFIG_FILE`, `MAX_TOKENS`)
 - **Variables**: camelCase (`provider`, `apiKey`, `model`)
-- **Interfaces**: PascalCase with descriptive names (`Config`, `ProviderConfig`)
+- **Interfaces**: PascalCase with descriptive names (`Config`, `ProviderConfig`, `Provider`)
 
 ### TypeScript Patterns
 Define interfaces for type safety:
 ```typescript
-interface Config {
+export interface Config {
     provider: string;
     apiKey: string | null;
     model: string;
 }
 
-interface ProviderConfig {
+export interface ProviderConfig {
     defaultModel: string;
+}
+
+export interface Provider {
+    Name: string;
+    Execute(prompt: string, apiKey: string, model: string): Promise<string>;
 }
 ```
 
 Use type annotations for all function parameters and return types:
 ```typescript
-async loadConfig(): Config {
+public async GenerateCommand(prompt: string): Promise<void> {
     // ...
 }
 
-async updateLLM(provider: string, apiKey: string, model: string | null = null): Promise<void> {
+public UpdateLLM(provider: string, apiKey: string, model: string | null = null): boolean {
     // ...
 }
 ```
@@ -160,7 +187,7 @@ if (!providers[provider]) {
 
 ### Async/Await Patterns
 Always use async/await for async operations:
-```javascript
+```typescript
 async function main() {
     const genie = new CmdGenie();
     // ...
@@ -169,9 +196,9 @@ async function main() {
 main().catch(console.error);
 ```
 
-Mark async methods:
-```javascript
-async updateLLM(provider, apiKey, model = null) {
+Mark async methods with public access modifier:
+```typescript
+public async UpdateLLM(provider: string, apiKey: string, model: string | null = null): Promise<void> {
     // ...
 }
 ```
@@ -192,50 +219,75 @@ Use emojis for visual distinction:
 - 🚀 Execution actions
 
 ### Config Management
-Load config with fallback to defaults:
-```javascript
-loadConfig() {
+Load config with fallback to defaults (in ConfigManager):
+```typescript
+private _LoadConfig(): Config {
     try {
         if (fs.existsSync(CONFIG_FILE)) {
             return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
         }
     } catch (error) {
-        console.error('Error loading config:', error.message);
+        console.error('Error loading config:', (error as Error).message);
     }
-    return { /* defaults */ };
+    return DEFAULT_CONFIG;
 }
 ```
 
 Save config with directory creation:
-```javascript
-saveConfig() {
+```typescript
+public SaveConfig(): void {
     try {
         if (!fs.existsSync(CONFIG_DIR)) {
             fs.mkdirSync(CONFIG_DIR, { recursive: true });
         }
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(this.config, null, 2));
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(this._config, null, 2));
     } catch (error) {
-        console.error('Error saving config:', error.message);
+        console.error('Error saving config:', (error as Error).message);
     }
 }
 ```
 
-### LLM Provider Methods
-Each provider has dedicated method following pattern:
-```javascript
-async call[Provider](prompt) {
-    const response = await fetch('api-endpoint', {
-        method: 'POST',
-        headers: { /* headers */ },
-        body: JSON.stringify({ /* payload */ })
-    });
+### LLM Provider Structure
+Each provider is a separate class implementing the Provider interface:
+```typescript
+// src/providers/base.ts
+export interface Provider {
+    Name: string;
+    Execute(prompt: string, apiKey: string, model: string): Promise<string>;
+}
 
-    const data = await response.json();
-    if (!response.ok) {
-        throw new Error(data.error?.message || '[Provider] API error');
+// src/providers/openai.ts
+export class OpenAIProvider implements Provider {
+    public readonly Name: string = 'openai';
+
+    public async Execute(prompt: string, apiKey: string, model: string): Promise<string> {
+        const response = await fetch(OPENAI_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: model || OPENAI_MODEL,
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You are a command line expert...`
+                    },
+                    { role: 'user', content: prompt }
+                ],
+                max_tokens: MAX_TOKENS,
+                temperature: TEMPERATURE
+            })
+        });
+
+        const data = await response.json() as OpenAIResponse;
+        if (!response.ok) {
+            throw new Error(data.error?.message || 'OpenAI API error');
+        }
+
+        return data.choices[0].message.content.trim();
     }
-
-    return data.command_path.trim();
 }
 ```
 
@@ -244,8 +296,8 @@ Include OS detection and strict output formatting:
 ```javascript
 {
     role: 'system',
-    content: `You are a command line expert. Generate only the exact command(s) needed for the user's request.
-Respond with ONLY the command(s), no explanations or formatting.
+    content: `You are a command line expert. Generate only the exact command(s) needed for the user's request. 
+Respond with ONLY the command(s), no explanations or formatting. 
 If multiple commands are needed, separate them with &&.
 Detect the operating system context and provide appropriate commands.
 Current OS: ${os.platform()}`
@@ -277,23 +329,29 @@ rl.question('\n🚀 Execute this command? (y/N): ', async (answer) => {
 
 ### Main Execution Pattern
 Parse arguments and route to methods:
-```javascript
-async function main() {
+```typescript
+import { CmdGenie } from './cli';
+
+async function main(): Promise<void> {
     const genie = new CmdGenie();
     const args = process.argv.slice(2);
 
     if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
-        genie.showHelp();
+        genie.ShowHelp();
         return;
     }
 
     if (args[0] === '--update-llm') {
-        await genie.updateLLM(args[1], args[2], args[3]);
+        if (args.length < 3) {
+            console.error('❌ Usage: cmdgenie --update-llm <provider> <api-key> [model]');
+            return;
+        }
+        await genie.UpdateLLM(args[1], args[2], args[3]);
         return;
     }
 
     const prompt = args.join(' ').replace(/^["']|["']$/g, '');
-    await genie.generateCommand(prompt);
+    await genie.GenerateCommand(prompt);
 }
 
 main().catch(console.error);
@@ -309,21 +367,55 @@ main().catch(console.error);
 
 ## File Organization
 
-- **Keep single-file architecture** (`index.ts` only)
+- **Source directory**: `src/` with modular structure
 - **Compiled output** in `dist/` directory
-- **Constants at top** (CONFIG_DIR, CONFIG_FILE)
-- **Interface definitions** before class
-- **Class definition** after constants
-- **Main execution** at bottom
+- **Module structure**:
+  - `src/types/` - Type definitions and interfaces
+  - `src/config/` - Configuration management (ConfigManager)
+  - `src/providers/` - LLM provider implementations
+  - `src/cli/` - CLI interface (CmdGenie class)
+  - `src/index.ts` - Main entry point
+- **Public API** exported from `src/cli/index.ts` and `src/types/index.ts`
+- **Root index.ts** acts as barrel export for npm
 - **No tests or linting** - manual testing only
+
+## Custom LLM Providers
+
+CmdGenie supports custom OpenAI-compatible LLM providers for maximum flexibility:
+
+### Adding Custom Providers
+```bash
+# Basic custom provider
+node dist/index.js --add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions
+
+# Custom provider with different model
+node dist/index.js --add-provider mylocal custom your-api-key llama-3.1-8b http://localhost:8000/v1/chat/completions
+```
+
+### Supported API Formats
+- **OpenAI-compatible** REST API endpoints
+- JSON request/response format matching OpenAI Chat Completions API
+- Bearer token authentication
+- Standard chat completion parameters (messages, model, max_tokens, temperature)
+
+### Requirements
+- Endpoint URL must be provided when registering custom providers
+- API must support OpenAI Chat Completions format
+- Valid API key for authentication
+
+### Troubleshooting
+- **Connection errors**: Verify endpoint URL is accessible and correct
+- **Authentication errors**: Check API key is valid and properly formatted
+- **Format errors**: Ensure API supports OpenAI-compatible chat completions endpoint
+- **Model not found**: Verify the model name is supported by your custom provider
 
 ## Adding New LLM Providers
 
-1. Add provider to `providers` object in `updateLLM()`
-2. Create `call[ProviderName]()` method with type annotations
-3. Define interfaces for new provider's API response
-4. Add case in `generateCommand()` switch statement
-5. Update help text in `showHelp()`
+1. Create new provider file in `src/providers/` (e.g., `mistral.ts`)
+2. Implement Provider interface with public `Name` property and `Execute` method
+3. Add provider registration to `src/providers/registry.ts`
+4. Add provider to `PROVIDERS` constant in `src/types/index.ts`
+5. Add provider URL and model constants to `src/types/index.ts`
 6. Test with manual CLI commands
 
 ## Important Notes
@@ -334,4 +426,6 @@ main().catch(console.error);
 - **No linting** - follow existing code style and TypeScript best practices
 - **Cross-platform** - always use `os.platform()` in prompts
 - **Shebang required**: `#!/usr/bin/env node` at top of compiled `dist/index.js`
-- **Single file** - maintain all code in index.ts
+- **Modular architecture** - use src/ directory for all source code
+
+
