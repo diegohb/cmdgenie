@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 ### Requirement: Tech Stack
 The project SHALL use TypeScript for type safety and better development experience.
 
@@ -44,12 +44,6 @@ The project SHALL provide build scripts for TypeScript compilation.
 - **AND** Compiled JavaScript is generated
 - **AND** Build output is suitable for npm publication
 
-## REMOVED Requirements
-### Requirement: No TypeScript Constraint
-**Reason**: Project is adopting TypeScript for better type safety and developer experience
-**Migration**: Remove "No TypeScript" constraint from documentation. Developers now use TypeScript for all development.
-
-## ADDED Requirements
 ### Requirement: TypeScript Configuration
 The project SHALL include tsconfig.json with appropriate compiler options.
 
