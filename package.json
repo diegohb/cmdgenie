@@ -92,5 +92,8 @@
         "tsconfig.json",
         "README.md",
         "LICENSE"
-    ]
+    ],
+    "dependencies": {
+        "commander": "^14.0.2"
+    }
 }
