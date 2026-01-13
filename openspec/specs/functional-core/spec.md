@@ -129,20 +129,6 @@ The system SHALL allow users to register custom LLM providers with their own API
 - **AND** provider is available for selection and command generation
 - **AND** configuration persists across sessions
 
-#### Scenario: Custom provider usage
-- **GIVEN** custom provider is registered in registry
-- **WHEN** user selects custom provider and runs command generation
-- **THEN** API calls are made to custom endpoint
-- **AND** Custom model and authentication are used
-- **AND** Response parsing works with OpenAI-compatible format
-
-#### Scenario: Custom provider validation
-- **GIVEN** custom provider registration attempt
-- **WHEN** user provides invalid endpoint or missing required fields
-- **THEN** validation error is shown
-- **AND** Provider is not registered
-- **AND** Helpful error message guides user to correct format
-
 ### Requirement: Custom Provider Registry Integration
 The provider registry SHALL support custom providers alongside built-in providers.
 
