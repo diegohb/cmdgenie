@@ -2,12 +2,21 @@
     "name": "cmdgenie",
     "version": "1.0.0",
     "description": "AI-powered command line tool that generates commands from natural language prompts",
-    "main": "index.js",
+    "main": "dist/index.js",
     "bin": {
-        "cmdgenie": "./index.js"
+        "cmdgenie": "./dist/index.js"
     },
     "scripts": {
+        "build": "tsc",
+        "prebuild": "npm run clean",
+        "clean": "rm -rf dist",
+        "dev": "tsc --watch",
+        "prepublishOnly": "npm run build",
         "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "devDependencies": {
+        "@types/node": "^20.19.28",
+        "typescript": "^5.9.3"
     },
     "keywords": [
         "cli-generator",
@@ -41,7 +50,10 @@
     },
     "homepage": "https://cmdgenie.github.io/cmdgenie/",
     "files": [
-        "index.js",
+        "index.ts",
+        "dist/index.js",
+        "dist/index.d.ts",
+        "tsconfig.json",
         "README.md",
         "LICENSE"
     ]

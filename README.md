@@ -120,6 +120,42 @@ Configuration is stored in `~/.cmdgenie/config.json`:
 - No data is sent to external services except the configured LLM provider
 - Commands are shown before execution for review
 
+## 🛠️ Development
+
+### Building from Source
+
+This project uses TypeScript. After installing dependencies:
+
+```bash
+# Install dependencies
+npm install
+
+# Build TypeScript to JavaScript
+npm run build
+
+# Watch mode for development
+npm run dev
+
+# Clean build output
+npm run clean
+```
+
+The compiled output is in `dist/index.js`, which is what gets installed and executed.
+
+### Manual Testing
+
+```bash
+# Build first
+npm run build
+
+# Run the compiled CLI
+node dist/index.js "find all directories"
+
+# Or install globally
+npm link
+cmdgenie "show disk usage"
+```
+
 ## 🤝 Contributing
 
 1. Fork the repository

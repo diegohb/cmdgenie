@@ -5,7 +5,7 @@ CmdGenie is an AI-powered command line tool that transforms natural language req
 
 ## Tech Stack
 - **Runtime**: Node.js >=14.0.0
-- **Language**: Vanilla JavaScript (CommonJS modules)
+- **Language**: TypeScript (compiled to JavaScript)
 - **Package Manager**: npm
 - **Architecture**: Single-file CLI tool
 - **Cross-platform**: Uses `os.platform()` for OS detection
@@ -14,10 +14,11 @@ CmdGenie is an AI-powered command line tool that transforms natural language req
 
 ### Code Style
 See [AGENTS.md](../AGENTS.md) for comprehensive code style guidelines including:
-- Import patterns (CommonJS require)
-- Naming conventions (PascalCase classes, camelCase methods, UPPER_SNAKE_CASE constants)
+- Import patterns (ES6 imports, TypeScript)
+- Naming conventions (PascalCase classes/interfaces, camelCase methods, UPPER_SNAKE_CASE constants)
 - Error handling patterns
 - Async/await usage
+- Type annotations and interfaces
 - Console output conventions with emojis
 - Template literals for string formatting
 
@@ -32,7 +33,8 @@ See [AGENTS.md](../AGENTS.md) for architecture details:
 
 ### Testing Strategy
 - **Manual testing only** - No automated test framework
-- Test via CLI: `node index.js "your prompt"` or `npm link && cmdgenie "your prompt"`
+- Build first: `npm run build`
+- Test via CLI: `node dist/index.js "your prompt"` or `npm link && cmdgenie "your prompt"`
 - Test each LLM provider with actual API keys
 - Verify cross-platform behavior on macOS, Windows, Linux
 
@@ -50,13 +52,13 @@ See [AGENTS.md](../AGENTS.md) for architecture details:
 - **Command Cleaning**: AI responses may include markdown formatting that needs stripping
 
 ## Important Constraints
-- **Single-file architecture**: Keep all code in `index.js` - no modularization
-- **No TypeScript**: Plain JavaScript only
+- **Single-file architecture**: Keep all code in `index.ts` - no modularization
+- **TypeScript required**: Compile to JavaScript with `npm run build`
 - **No test framework**: Manual CLI testing only
-- **No linting**: Follow existing code style manually
+- **No linting**: Follow existing code style and TypeScript best practices
 - **Node.js >=14.0.0**: Minimum required version
 - **Security**: Never log API keys, validate providers, use safe config storage
-- **Shebang required**: `#!/usr/bin/env node` at top of index.js for CLI execution
+- **Shebang required**: `#!/usr/bin/env node` at top of compiled `dist/index.js` for CLI execution
 
 ## External Dependencies
 - **OpenAI API**: https://api.openai.com/v1/chat/completions
