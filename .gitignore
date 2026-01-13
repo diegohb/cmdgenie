@@ -103,6 +103,10 @@ Desktop.ini
 logs
 *.log
 
+# TypeScript compiled output
+dist/
+*.js.map
+
 # Config files (keep template)
 config.json
 !config.template.json

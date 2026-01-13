@@ -1,29 +1,103 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { exec } = require('child_process');
-const { promisify } = require('util');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import * as readline from 'readline';
 
 const execAsync = promisify(exec);
 
-// Configuration file path
-const CONFIG_DIR = path.join(os.homedir(), '.cmdgenie');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+// Configuration file paths
+const CONFIG_DIR: string = path.join(os.homedir(), '.cmdgenie');
+const CONFIG_FILE: string = path.join(CONFIG_DIR, 'config.json');
+
+// Type definitions
+interface ProviderConfig {
+    defaultModel: string;
+}
+
+interface Config {
+    provider: string;
+    apiKey: string | null;
+    model: string;
+}
+
+interface OpenAIChoice {
+    message: {
+        content: string;
+    };
+}
+
+interface OpenAIResponse {
+    choices: OpenAIChoice[];
+    error?: {
+        message: string;
+    };
+}
+
+interface AnthropicContent {
+    text: string;
+}
+
+interface AnthropicResponse {
+    content: AnthropicContent[];
+    error?: {
+        message: string;
+    };
+}
+
+interface GooglePart {
+    text: string;
+}
+
+interface GoogleContent {
+    parts: GooglePart[];
+}
+
+interface GoogleCandidate {
+    content: GoogleContent;
+}
+
+interface GoogleResponse {
+    candidates: GoogleCandidate[];
+    error?: {
+        message: string;
+    };
+}
+
+interface CohereGeneration {
+    text: string;
+}
+
+interface CohereResponse {
+    generations: CohereGeneration[];
+    message?: string;
+}
+
+// Provider configurations
+const providers: Record<string, ProviderConfig> = {
+    'openai': { defaultModel: 'gpt-3.5-turbo' },
+    'anthropic': { defaultModel: 'claude-3-haiku-20240307' },
+    'google': { defaultModel: 'gemini-pro' },
+    'cohere': { defaultModel: 'command' }
+};
 
 class CmdGenie {
+    public config: Config;
+
     constructor() {
         this.config = this.loadConfig();
     }
 
-    loadConfig() {
+    loadConfig(): Config {
         try {
             if (fs.existsSync(CONFIG_FILE)) {
                 return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
             }
         } catch (error) {
-            console.error('Error loading config:', error.message);
+            console.error('Error loading config:', (error as Error).message);
         }
 
         return {
@@ -33,25 +107,18 @@ class CmdGenie {
         };
     }
 
-    saveConfig() {
+    saveConfig(): void {
         try {
             if (!fs.existsSync(CONFIG_DIR)) {
                 fs.mkdirSync(CONFIG_DIR, { recursive: true });
             }
             fs.writeFileSync(CONFIG_FILE, JSON.stringify(this.config, null, 2));
         } catch (error) {
-            console.error('Error saving config:', error.message);
+            console.error('Error saving config:', (error as Error).message);
         }
     }
 
-    async updateLLM(provider, apiKey, model = null) {
-        const providers = {
-            'openai': { defaultModel: 'gpt-3.5-turbo' },
-            'anthropic': { defaultModel: 'claude-3-haiku-20240307' },
-            'google': { defaultModel: 'gemini-pro' },
-            'cohere': { defaultModel: 'command' }
-        };
-
+    async updateLLM(provider: string, apiKey: string, model: string | null = null): Promise<void> {
         if (!providers[provider]) {
             console.error(`Unsupported provider: ${provider}`);
             console.log('Supported providers:', Object.keys(providers).join(', '));
@@ -66,7 +133,7 @@ class CmdGenie {
         console.log(`✅ LLM updated: ${provider} with model ${this.config.model}`);
     }
 
-    async callOpenAI(prompt) {
+    async callOpenAI(prompt: string): Promise<string> {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -91,7 +158,7 @@ class CmdGenie {
             })
         });
 
-        const data = await response.json();
+        const data = await response.json() as OpenAIResponse;
         if (!response.ok) {
             throw new Error(data.error?.message || 'OpenAI API error');
         }
@@ -99,12 +166,12 @@ class CmdGenie {
         return data.choices[0].message.content.trim();
     }
 
-    async callAnthropic(prompt) {
+    async callAnthropic(prompt: string): Promise<string> {
         const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-api-key': this.config.apiKey,
+                'x-api-key': this.config.apiKey!,
                 'anthropic-version': '2023-06-01'
             },
             body: JSON.stringify({
@@ -122,7 +189,7 @@ class CmdGenie {
             })
         });
 
-        const data = await response.json();
+        const data = await response.json() as AnthropicResponse;
         if (!response.ok) {
             throw new Error(data.error?.message || 'Anthropic API error');
         }
@@ -130,7 +197,7 @@ class CmdGenie {
         return data.content[0].text.trim();
     }
 
-    async callGoogle(prompt) {
+    async callGoogle(prompt: string): Promise<string> {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.config.model}:generateContent?key=${this.config.apiKey}`, {
             method: 'POST',
             headers: {
@@ -148,7 +215,7 @@ class CmdGenie {
             })
         });
 
-        const data = await response.json();
+        const data = await response.json() as GoogleResponse;
         if (!response.ok) {
             throw new Error(data.error?.message || 'Google API error');
         }
@@ -156,7 +223,7 @@ class CmdGenie {
         return data.candidates[0].content.parts[0].text.trim();
     }
 
-    async callCohere(prompt) {
+    async callCohere(prompt: string): Promise<string> {
         const response = await fetch('https://api.cohere.ai/v1/generate', {
             method: 'POST',
             headers: {
@@ -176,7 +243,7 @@ class CmdGenie {
             })
         });
 
-        const data = await response.json();
+        const data = await response.json() as CohereResponse;
         if (!response.ok) {
             throw new Error(data.message || 'Cohere API error');
         }
@@ -184,7 +251,7 @@ class CmdGenie {
         return data.generations[0].text.trim();
     }
 
-    async generateCommand(prompt) {
+    async generateCommand(prompt: string): Promise<void> {
         if (!this.config.apiKey) {
             console.error('❌ No API key configured. Please run: cmdgenie --update-llm <provider> <api-key>');
             return;
@@ -193,7 +260,7 @@ class CmdGenie {
         console.log('🤖 Generating command...');
 
         try {
-            let command;
+            let command: string;
 
             switch (this.config.provider) {
                 case 'openai':
@@ -218,13 +285,12 @@ class CmdGenie {
             console.log(`\n💡 Generated command: ${command}`);
 
             // Ask user if they want to execute
-            const readline = require('readline');
             const rl = readline.createInterface({
                 input: process.stdin,
                 output: process.stdout
             });
 
-            rl.question('\n🚀 Execute this command? (y/N): ', async (answer) => {
+            rl.question('\n🚀 Execute this command? (y/N): ', async (answer: string) => {
                 if (answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {
                     try {
                         console.log('\n📋 Executing...');
@@ -232,20 +298,20 @@ class CmdGenie {
                         if (stdout) console.log(stdout);
                         if (stderr) console.error(stderr);
                     } catch (error) {
-                        console.error('❌ Execution error:', error.message);
+                        console.error('❌ Execution error:', (error as Error).message);
                     }
                 }
                 rl.close();
             });
 
         } catch (error) {
-            console.error('❌ Error generating command:', error.message);
+            console.error('❌ Error generating command:', (error as Error).message);
         }
     }
 
-    showHelp() {
+    showHelp(): void {
         console.log(`
-🧞 CmdGenie - AI-Powered Command Generator
+ 🧞 CmdGenie - AI-Powered Command Generator
 
 Usage:
   cmdgenie "your natural language request"
@@ -272,7 +338,7 @@ Current config:
 }
 
 // Main execution
-async function main() {
+async function main(): Promise<void> {
     const genie = new CmdGenie();
     const args = process.argv.slice(2);
 
