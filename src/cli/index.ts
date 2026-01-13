@@ -27,8 +27,8 @@ export class CmdGenie {
         }
     }
 
-    public AddProvider(name: string, provider: string, apiKey: string, model?: string): void {
-        const success = this._configManager.RegistryManager.AddProvider(name, provider, apiKey, model || '');
+    public AddProvider(name: string, provider: string, apiKey: string, model?: string, endpointUrl?: string): void {
+        const success = this._configManager.RegistryManager.AddProvider(name, provider, apiKey, model || '', endpointUrl);
         if (!success) {
             console.error(`Failed to add provider: ${name}`);
         }
@@ -77,8 +77,10 @@ export class CmdGenie {
                 // First run: no providers configured
                 console.error('❌ No providers configured. This appears to be your first run.');
                 console.log('Please add a provider first:');
-                console.log('  cmdgenie --add-provider <name> <provider> <api-key> [model]');
-                console.log('Example: cmdgenie --add-provider myopenai openai sk-your-api-key');
+                console.log('  cmdgenie --add-provider <name> <provider> <api-key> [model] [endpoint-url]');
+                console.log('Examples:');
+                console.log('  cmdgenie --add-provider myopenai openai sk-your-api-key');
+                console.log('  cmdgenie --add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions');
                 return;
             } else {
                 console.error('❌ No active provider selected. Please choose one:');
@@ -105,7 +107,8 @@ export class CmdGenie {
             let command = await provider.Execute(
                 prompt,
                 activeEntry.apiKey,
-                activeEntry.model
+                activeEntry.model,
+                activeEntry.endpointUrl
             );
 
             command = command.replace(/```[\s\S]*?```/g, '').replace(/`/g, '').trim();
@@ -143,7 +146,7 @@ export class CmdGenie {
 
   Usage:
     cmdgenie "your natural language request"
-    cmdgenie --add-provider <name> <provider> <api-key> [model]
+     cmdgenie --add-provider <name> <provider> <api-key> [model] [endpoint-url]
     cmdgenie --list-providers
     cmdgenie --remove-provider <name>
     cmdgenie --show-provider <name>
@@ -158,6 +161,7 @@ export class CmdGenie {
   Provider Management:
     cmdgenie --add-provider myopenai openai sk-your-api-key
     cmdgenie --add-provider myanthropic anthropic your-api-key claude-3-haiku-20240307
+    cmdgenie --add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions
     cmdgenie --list-providers
     cmdgenie --show-provider myopenai
     cmdgenie --update-llm myopenai

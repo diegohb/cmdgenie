@@ -10,8 +10,9 @@ import {
 export class AnthropicProvider implements Provider {
     public readonly Name: string = 'anthropic';
 
-    public async Execute(prompt: string, apiKey: string, model: string): Promise<string> {
-        const response = await fetch(ANTHROPIC_URL, {
+    public async Execute(prompt: string, apiKey: string, model: string, endpointUrl?: string): Promise<string> {
+        const url = endpointUrl || ANTHROPIC_URL;
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

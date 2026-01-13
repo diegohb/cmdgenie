@@ -4,7 +4,7 @@ import { GOOGLE_URL, GOOGLE_MODEL, GetOS, GoogleResponse } from '../types';
 export class GoogleProvider implements Provider {
     public readonly Name: string = 'google';
 
-    public async Execute(prompt: string, apiKey: string, model: string): Promise<string> {
+    public async Execute(prompt: string, apiKey: string, model: string, _endpointUrl?: string): Promise<string> {
         const response = await fetch(`${GOOGLE_URL}/${model || GOOGLE_MODEL}:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: {

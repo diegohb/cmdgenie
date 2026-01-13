@@ -1,7 +1,9 @@
 import { AnthropicProvider } from '../../src/providers/anthropic';
 import { GoogleProvider } from '../../src/providers/google';
 import { CohereProvider } from '../../src/providers/cohere';
-import { AnthropicResponse, GoogleResponse, CohereResponse } from '../../src/types';
+import { OllamaProvider } from '../../src/providers/ollama';
+import { CustomProvider } from '../../src/providers/custom';
+import { AnthropicResponse, GoogleResponse, CohereResponse, OllamaResponse, OpenAIResponse } from '../../src/types';
 
 // Mock fetch globally
 global.fetch = jest.fn();
@@ -99,5 +101,70 @@ describe('CohereProvider', () => {
 
         expect(mockedFetch).toHaveBeenCalledWith('https://api.cohere.ai/v1/generate', expect.any(Object));
         expect(result).toBe('pwd');
+    });
+});
+
+describe('OllamaProvider', () => {
+    let provider: OllamaProvider;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        provider = new OllamaProvider();
+    });
+
+    it('should have correct name', () => {
+        expect(provider.Name).toBe('ollama');
+    });
+
+    it('should make correct API call', async () => {
+        const mockResponse: OllamaResponse = {
+            response: 'ls -la',
+            done: true
+        };
+
+        mockedFetch.mockResolvedValueOnce({
+            ok: true,
+            json: jest.fn().mockResolvedValue(mockResponse)
+        } as any);
+
+        const result = await provider.Execute('list files', '', 'llama3.1');
+
+        expect(mockedFetch).toHaveBeenCalledWith('http://localhost:11434/api/generate', expect.any(Object));
+        expect(result).toBe('ls -la');
+    });
+});
+
+describe('CustomProvider', () => {
+    let provider: CustomProvider;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        provider = new CustomProvider();
+    });
+
+    it('should have correct name', () => {
+        expect(provider.Name).toBe('custom');
+    });
+
+    it('should make correct API call with endpoint URL', async () => {
+        const mockResponse: OpenAIResponse = {
+            choices: [{
+                message: { content: 'ls -la' }
+            }]
+        };
+
+        mockedFetch.mockResolvedValueOnce({
+            ok: true,
+            json: jest.fn().mockResolvedValue(mockResponse)
+        } as any);
+
+        const result = await provider.Execute('list files', 'api-key', 'gpt-3.5-turbo', 'https://custom.api.com/v1/chat/completions');
+
+        expect(mockedFetch).toHaveBeenCalledWith('https://custom.api.com/v1/chat/completions', expect.any(Object));
+        expect(result).toBe('ls -la');
+    });
+
+    it('should throw error when no endpoint URL provided', async () => {
+        await expect(provider.Execute('list files', 'api-key', 'gpt-3.5-turbo')).rejects.toThrow('Custom provider requires an endpoint URL');
     });
 });

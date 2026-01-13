@@ -13,10 +13,10 @@ async function main() {
 
     if (args[0] === '--add-provider') {
         if (args.length < 4) {
-            console.error('❌ Usage: cmdgenie --add-provider <name> <provider> <api-key> [model]');
+            console.error('❌ Usage: cmdgenie --add-provider <name> <provider> <api-key> [model] [endpoint-url]');
             return;
         }
-        genie.AddProvider(args[1], args[2], args[3], args[4]);
+        genie.AddProvider(args[1], args[2], args[3], args[4], args[5]);
         return;
     }
 

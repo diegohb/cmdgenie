@@ -148,6 +148,12 @@ export class ProviderRegistryManager {
             return false;
         }
 
+        if (provider === 'custom' && !endpointUrl) {
+            console.error('Custom provider requires an endpoint URL');
+            console.log('Example: cmdgenie --add-provider mycustom custom api-key model https://api.example.com/v1/chat/completions');
+            return false;
+        }
+
         this._registry[name] = {
             name,
             provider,

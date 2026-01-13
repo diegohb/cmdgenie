@@ -49,3 +49,9 @@ export interface CohereResponse {
     generations: CohereGeneration[];
     message?: string;
 }
+
+export interface OllamaResponse {
+    response: string;
+    done: boolean;
+    error?: string;
+}
