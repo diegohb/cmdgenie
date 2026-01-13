@@ -4,14 +4,15 @@
     "description": "AI-powered command line tool that generates commands from natural language prompts",
     "main": "dist/index.js",
     "bin": {
-        "cmdgenie": "./dist/index.js"
+        "cmdgenie": "./bin/cmdgenie.js"
     },
     "scripts": {
-        "build": "tsc && echo \"#!/usr/bin/env node\" > dist/index.js && type nul >> dist/index.js",
+        "build": "tsc",
         "prebuild": "npm run clean",
         "clean": "if exist dist rmdir /s /q dist",
         "dev": "tsc --watch",
         "prepublishOnly": "npm run build",
+        "postbuild": "powershell -Command \"$content = Get-Content dist\\index.js; Set-Content -Path dist\\index.js -Value '#!/usr/bin/env node', $content\"",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "devDependencies": {
