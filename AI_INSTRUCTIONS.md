@@ -51,12 +51,34 @@ npm link
 cmdgenie "show disk usage"
 ```
 
-### Update LLM Provider
+### Provider Management
 ```bash
-node dist/index.js --update-llm openai sk-your-key
-node dist/index.js --update-llm anthropic your-key claude-3-haiku-20240307
-node dist/index.js --update-llm google your-key gemini-pro
-node dist/index.js --update-llm cohere your-key
+# Add a provider
+cmdgenie add-provider openai openai sk-your-api-key
+
+# List configured providers
+cmdgenie list-providers
+
+# Set active provider
+cmdgenie update-llm openai
+
+# Remove a provider
+cmdgenie remove-provider openai
+```
+
+### Provider Management Commands
+```bash
+# Add providers
+node dist/index.js add-provider openai openai sk-your-key
+node dist/index.js add-provider anthropic anthropic your-key claude-3-haiku-20240307
+node dist/index.js add-provider google google your-key gemini-pro
+node dist/index.js add-provider cohere cohere your-key command
+
+# Set active provider
+node dist/index.js update-llm openai
+
+# List providers
+node dist/index.js list-providers
 ```
 
 ## Architecture Overview
@@ -67,15 +89,16 @@ CmdGenie is a modular CLI tool using Node.js and TypeScript with the following s
 - **Compiled Output**: `dist/index.js` (compiled JavaScript with shebang)
 - **Modules**:
   - `src/types/` - Type definitions (Config, ProviderConfig, provider responses)
-  - `src/config/` - Configuration management (ConfigManager class)
-  - `src/providers/` - LLM provider implementations (OpenAI, Anthropic, Google, Cohere)
-  - `src/cli/` - CLI interface (CmdGenie class)
-  - `src/index.ts` - Main entry point and barrel exports
-- **Entry Point**: `index.ts` (exports from src/)
+  - `src/config/` - Configuration management (ConfigManager, ProviderRegistryManager)
+  - `src/providers/` - LLM provider implementations (OpenAI, Anthropic, Google, Cohere, Ollama, Custom)
+  - `src/cli/` - CLI interface (CmdGenie class, Commander.js commands)
+  - `src/main.ts` - Main entry point with Commander.js setup
+- **Entry Point**: `src/main.ts` (Commander.js CLI setup)
 - **Class**: `CmdGenie` class encapsulates CLI functionality
-- **Config**: Stored in `~/.cmdgenie/config.json`
-- **LLM Providers**: OpenAI, Anthropic, Google, Cohere (modular implementations)
-- **Cross-Platform**: Uses `os.platform()` to detect OS
+- **Config**: Active provider in `~/.cmdgenie/config.json`, providers in `~/.cmdgenie/providers.json`
+- **LLM Providers**: OpenAI, Anthropic, Google, Cohere, Ollama, Custom (modular implementations)
+- **CLI Framework**: Commander.js for structured command parsing with interactive prompting
+- **Cross-Platform**: Uses `os.platform()` and shell detection for context
 
 ## Code Style Guidelines
 
@@ -100,11 +123,9 @@ Define class with constructor and explicit access modifiers:
 ```typescript
 export class CmdGenie {
     private readonly _configManager: ConfigManager;
-    private readonly _providerRegistry: ProviderRegistry;
 
     constructor() {
         this._configManager = new ConfigManager();
-        this._providerRegistry = new ProviderRegistry();
     }
 
     public get Config(): Config {
@@ -112,11 +133,18 @@ export class CmdGenie {
     }
 
     public async GenerateCommand(prompt: string): Promise<void> {
-        // ...
+        // Check active provider, get provider instance, execute with OS/shell context
     }
 
-    private _CleanResponse(response: string): string {
-        // ...
+    public AddProvider(name: string, provider: string, apiKey: string, model?: string, endpointUrl?: string): void {
+        this._configManager.RegistryManager.AddProvider(name, provider, apiKey, model || '', endpointUrl);
+    }
+
+    public async UpdateActiveProvider(providerName: string): Promise<void> {
+        const success = this._configManager.UpdateActiveProvider(providerName);
+        if (!success) {
+            console.error(`Failed to update active provider to: ${providerName}`);
+        }
     }
 }
 ```
@@ -135,9 +163,19 @@ export class CmdGenie {
 Define interfaces for type safety:
 ```typescript
 export interface Config {
+    activeProvider: string;
+}
+
+export interface ProviderEntry {
+    name: string;
     provider: string;
-    apiKey: string | null;
+    apiKey: string;
     model: string;
+    endpointUrl?: string;
+}
+
+export interface ProviderRegistry {
+    [providerName: string]: ProviderEntry;
 }
 
 export interface ProviderConfig {
@@ -146,7 +184,7 @@ export interface ProviderConfig {
 
 export interface Provider {
     Name: string;
-    Execute(prompt: string, apiKey: string, model: string): Promise<string>;
+    Execute(prompt: string, apiKey: string, model: string, endpointUrl?: string): Promise<string>;
 }
 ```
 
@@ -156,7 +194,11 @@ public async GenerateCommand(prompt: string): Promise<void> {
     // ...
 }
 
-public UpdateLLM(provider: string, apiKey: string, model: string | null = null): boolean {
+public AddProvider(name: string, provider: string, apiKey: string, model?: string, endpointUrl?: string): void {
+    // ...
+}
+
+public async UpdateActiveProvider(providerName: string): Promise<void> {
     // ...
 }
 ```
@@ -219,7 +261,7 @@ Use emojis for visual distinction:
 - 🚀 Execution actions
 
 ### Config Management
-Load config with fallback to defaults (in ConfigManager):
+Load active provider config with fallback:
 ```typescript
 private _LoadConfig(): Config {
     try {
@@ -229,39 +271,47 @@ private _LoadConfig(): Config {
     } catch (error) {
         console.error('Error loading config:', (error as Error).message);
     }
-    return DEFAULT_CONFIG;
+    return { activeProvider: '' };
 }
 ```
 
-Save config with directory creation:
+Registry-based provider management:
 ```typescript
-public SaveConfig(): void {
+private _LoadRegistry(): ProviderRegistry {
     try {
-        if (!fs.existsSync(CONFIG_DIR)) {
-            fs.mkdirSync(CONFIG_DIR, { recursive: true });
+        if (fs.existsSync(PROVIDERS_FILE)) {
+            return JSON.parse(fs.readFileSync(PROVIDERS_FILE, 'utf8'));
         }
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(this._config, null, 2));
     } catch (error) {
-        console.error('Error saving config:', (error as Error).message);
+        console.error('Error loading provider registry:', (error as Error).message);
     }
+    return {};
+}
+
+public AddProvider(name: string, provider: string, apiKey: string, model: string, endpointUrl?: string): boolean {
+    // Validate and add to registry
+    this._registry[name] = { name, provider, apiKey, model, endpointUrl };
+    this.SaveRegistry();
+    return true;
 }
 ```
 
 ### LLM Provider Structure
 Each provider is a separate class implementing the Provider interface:
 ```typescript
-// src/providers/base.ts
+// src/types/index.ts
 export interface Provider {
     Name: string;
-    Execute(prompt: string, apiKey: string, model: string): Promise<string>;
+    Execute(prompt: string, apiKey: string, model: string, endpointUrl?: string): Promise<string>;
 }
 
 // src/providers/openai.ts
 export class OpenAIProvider implements Provider {
     public readonly Name: string = 'openai';
 
-    public async Execute(prompt: string, apiKey: string, model: string): Promise<string> {
-        const response = await fetch(OPENAI_URL, {
+    public async Execute(prompt: string, apiKey: string, model: string, endpointUrl?: string): Promise<string> {
+        const url = endpointUrl || OPENAI_URL;
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -272,7 +322,8 @@ export class OpenAIProvider implements Provider {
                 messages: [
                     {
                         role: 'system',
-                        content: `You are a command line expert...`
+                        content: `You are a command line expert. Generate only the exact command(s) needed...
+Current OS: ${GetOS()}, Current Shell: ${GetShell()}`
                     },
                     { role: 'user', content: prompt }
                 ],
@@ -292,15 +343,15 @@ export class OpenAIProvider implements Provider {
 ```
 
 ### System Prompts
-Include OS detection and strict output formatting:
+Include OS and shell detection for contextual command generation:
 ```javascript
 {
     role: 'system',
-    content: `You are a command line expert. Generate only the exact command(s) needed for the user's request. 
-Respond with ONLY the command(s), no explanations or formatting. 
+    content: `You are a command line expert. Generate only the exact command(s) needed for the user's request.
+Respond with ONLY the command(s), no explanations or formatting.
 If multiple commands are needed, separate them with &&.
-Detect the operating system context and provide appropriate commands.
-Current OS: ${os.platform()}`
+Detect the operating system and shell context and provide appropriate commands.
+Current OS: ${GetOS()}, Current Shell: ${GetShell()}`
 }
 ```
 
@@ -328,40 +379,45 @@ rl.question('\n🚀 Execute this command? (y/N): ', async (answer) => {
 ```
 
 ### Main Execution Pattern
-Parse arguments and route to methods:
+Use Commander.js for structured CLI with interactive prompting:
 ```typescript
-import { CmdGenie } from './cli';
+import { setupCLI } from './cli/commands';
 
-async function main(): Promise<void> {
-    const genie = new CmdGenie();
-    const args = process.argv.slice(2);
+async function main() {
+    const program = setupCLI();
 
-    if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
-        genie.ShowHelp();
-        return;
+    try {
+        await program.parseAsync();
+    } catch (error) {
+        console.error('❌ Error:', (error as Error).message);
+        process.exit(1);
     }
-
-    if (args[0] === '--update-llm') {
-        if (args.length < 3) {
-            console.error('❌ Usage: cmdgenie --update-llm <provider> <api-key> [model]');
-            return;
-        }
-        await genie.UpdateLLM(args[1], args[2], args[3]);
-        return;
-    }
-
-    const prompt = args.join(' ').replace(/^["']|["']$/g, '');
-    await genie.GenerateCommand(prompt);
 }
 
 main().catch(console.error);
+```
+
+### Command Structure
+Define commands with Commander.js:
+```typescript
+program
+    .command('add-provider')
+    .description('Add a new LLM provider')
+    .argument('[name]', 'Provider name')
+    .argument('[provider]', 'Provider type')
+    .argument('[api-key]', 'API key')
+    .action(async (name?: string, provider?: string, apiKey?: string) => {
+        // Interactive prompting for missing args
+        if (!name) name = await promptUser('Provider name: ');
+        // ... implementation
+    });
 ```
 
 ## Security Guidelines
 
 - **Never log API keys** in console output
 - **Validate provider names** against allowed list
-- **Store config in user home directory** (`~/.cmdgenie/`)
+- **Store config in user home directory** (`~/.cmdgenie/config.json` and `~/.cmdgenie/providers.json`)
 - **Show commands before execution** for user review
 - **Use relative paths** in prompts, avoid exposing system paths
 
@@ -371,13 +427,15 @@ main().catch(console.error);
 - **Compiled output** in `dist/` directory
 - **Module structure**:
   - `src/types/` - Type definitions and interfaces
-  - `src/config/` - Configuration management (ConfigManager)
-  - `src/providers/` - LLM provider implementations
-  - `src/cli/` - CLI interface (CmdGenie class)
-  - `src/index.ts` - Main entry point
+  - `src/config/` - Configuration management (ConfigManager, ProviderRegistryManager)
+  - `src/providers/` - LLM provider implementations (OpenAI, Anthropic, Google, Cohere, Ollama, Custom)
+  - `src/cli/` - CLI interface (CmdGenie class, Commander.js commands)
+  - `src/main.ts` - Main entry point with CLI setup
 - **Public API** exported from `src/cli/index.ts` and `src/types/index.ts`
-- **Root index.ts** acts as barrel export for npm
-- **No tests or linting** - manual testing only
+- **CLI Framework**: Commander.js with interactive prompting
+- **Configuration**: Registry-based provider storage with active provider selection
+- **Testing**: Jest framework with comprehensive unit and integration tests
+- **Linting**: Oxlint for code quality and style checking
 
 ## Custom LLM Providers
 
@@ -386,10 +444,10 @@ CmdGenie supports custom OpenAI-compatible LLM providers for maximum flexibility
 ### Adding Custom Providers
 ```bash
 # Basic custom provider
-node dist/index.js --add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions
+node dist/index.js add-provider mycustom custom your-api-key gpt-3.5-turbo https://api.example.com/v1/chat/completions
 
 # Custom provider with different model
-node dist/index.js --add-provider mylocal custom your-api-key llama-3.1-8b http://localhost:8000/v1/chat/completions
+node dist/index.js add-provider mylocal custom your-api-key llama-3.1-8b http://localhost:8000/v1/chat/completions
 ```
 
 ### Supported API Formats
@@ -422,9 +480,9 @@ node dist/index.js --add-provider mylocal custom your-api-key llama-3.1-8b http:
 
 - **Node.js version**: >=14.0.0
 - **TypeScript enabled** - compile with `npm run build`
-- **No test framework** - manual testing via CLI
-- **No linting** - follow existing code style and TypeScript best practices
-- **Cross-platform** - always use `os.platform()` in prompts
+- **Testing**: Jest framework with comprehensive unit and integration tests
+- **Linting**: Oxlint for code quality and style checking
+- **Cross-platform** - uses `GetOS()` and `GetShell()` for context
 - **Shebang required**: `#!/usr/bin/env node` at top of compiled `dist/index.js`
 - **Modular architecture** - use src/ directory for all source code
 
