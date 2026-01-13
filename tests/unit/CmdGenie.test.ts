@@ -23,18 +23,21 @@ describe('CmdGenie', () => {
         jest.clearAllMocks();
 
         // Setup ConfigManager mock
+        const mockListProviders = jest.fn().mockReturnValue([]);
         mockConfigManager = {
             Config: {
-                provider: 'openai',
-                apiKey: 'test-key',
-                model: 'gpt-3.5-turbo'
+                activeProvider: 'myopenai'
             },
-            Provider: 'openai',
-            Model: 'gpt-3.5-turbo',
-            ApiKey: 'test-key',
-            UpdateLLM: jest.fn(),
-            HasApiKey: jest.fn(),
-            GetProviderConfig: jest.fn()
+            ActiveProvider: 'myopenai',
+            UpdateActiveProvider: jest.fn(),
+            HasActiveProvider: jest.fn(),
+            GetActiveProviderEntry: jest.fn(),
+            RegistryManager: {
+                AddProvider: jest.fn(),
+                RemoveProvider: jest.fn(),
+                GetProvider: jest.fn(),
+                ListProviders: mockListProviders
+            }
         } as any;
 
         // Setup ProviderRegistry mock
@@ -61,22 +64,22 @@ describe('CmdGenie', () => {
         });
     });
 
-    describe('UpdateLLM', () => {
-        it('should call ConfigManager UpdateLLM with success', async () => {
-            mockConfigManager.UpdateLLM.mockReturnValue(true);
+    describe('UpdateActiveProvider', () => {
+        it('should call ConfigManager UpdateActiveProvider with success', async () => {
+            mockConfigManager.UpdateActiveProvider.mockReturnValue(true);
 
-            await cmdGenie.UpdateLLM('openai', 'new-key', 'gpt-4');
+            await cmdGenie.UpdateActiveProvider('myopenai');
 
-            expect(mockConfigManager.UpdateLLM).toHaveBeenCalledWith('openai', 'new-key', 'gpt-4');
+            expect(mockConfigManager.UpdateActiveProvider).toHaveBeenCalledWith('myopenai');
         });
 
-        it('should handle UpdateLLM failure', async () => {
-            mockConfigManager.UpdateLLM.mockReturnValue(false);
+        it('should handle UpdateActiveProvider failure', async () => {
+            mockConfigManager.UpdateActiveProvider.mockReturnValue(false);
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
-            await cmdGenie.UpdateLLM('invalid', 'key');
+            await cmdGenie.UpdateActiveProvider('invalid');
 
-            expect(consoleSpy).toHaveBeenCalledWith('Unsupported provider: invalid');
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to update active provider to: invalid');
             consoleSpy.mockRestore();
         });
     });
@@ -95,17 +98,24 @@ describe('CmdGenie', () => {
             consoleErrorSpy.mockRestore();
         });
 
-        it('should error when no API key is configured', async () => {
-            mockConfigManager.HasApiKey.mockReturnValue(false);
+        it('should error when no active provider is configured', async () => {
+            mockConfigManager.HasActiveProvider.mockReturnValue(false);
+            (mockConfigManager.RegistryManager.ListProviders as jest.Mock).mockReturnValue([]);
 
             await cmdGenie.GenerateCommand('test prompt');
 
-            expect(consoleErrorSpy).toHaveBeenCalledWith('❌ No API key configured. Please run: cmdgenie --update-llm <provider> <api-key>');
+            expect(consoleErrorSpy).toHaveBeenCalledWith('❌ No providers configured. This appears to be your first run.');
             expect(consoleLogSpy).not.toHaveBeenCalledWith('🤖 Generating command...');
         });
 
         it('should generate command successfully', async () => {
-            mockConfigManager.HasApiKey.mockReturnValue(true);
+            mockConfigManager.HasActiveProvider.mockReturnValue(true);
+            mockConfigManager.GetActiveProviderEntry.mockReturnValue({
+                name: 'myopenai',
+                provider: 'openai',
+                apiKey: 'test-key',
+                model: 'gpt-3.5-turbo'
+            });
             mockProviderRegistry.GetProvider.mockReturnValue(new OpenAIProvider());
 
             const mockProvider = mockProviderRegistry.GetProvider('openai') as OpenAIProvider;
@@ -131,7 +141,13 @@ describe('CmdGenie', () => {
         });
 
         it('should handle unsupported provider', async () => {
-            mockConfigManager.HasApiKey.mockReturnValue(true);
+            mockConfigManager.HasActiveProvider.mockReturnValue(true);
+            mockConfigManager.GetActiveProviderEntry.mockReturnValue({
+                name: 'myopenai',
+                provider: 'openai',
+                apiKey: 'test-key',
+                model: 'gpt-3.5-turbo'
+            });
             mockProviderRegistry.GetProvider.mockReturnValue(null);
 
             await cmdGenie.GenerateCommand('test prompt');
@@ -140,7 +156,13 @@ describe('CmdGenie', () => {
         });
 
         it('should handle provider execution errors', async () => {
-            mockConfigManager.HasApiKey.mockReturnValue(true);
+            mockConfigManager.HasActiveProvider.mockReturnValue(true);
+            mockConfigManager.GetActiveProviderEntry.mockReturnValue({
+                name: 'myopenai',
+                provider: 'openai',
+                apiKey: 'test-key',
+                model: 'gpt-3.5-turbo'
+            });
             const mockProvider = new OpenAIProvider();
             mockProvider.Execute = jest.fn().mockRejectedValue(new Error('API Error'));
             mockProviderRegistry.GetProvider.mockReturnValue(mockProvider);
@@ -151,7 +173,13 @@ describe('CmdGenie', () => {
         });
 
         it.skip('should clean markdown from command response', async () => {
-            mockConfigManager.HasApiKey.mockReturnValue(true);
+            mockConfigManager.HasActiveProvider.mockReturnValue(true);
+            mockConfigManager.GetActiveProviderEntry.mockReturnValue({
+                name: 'myopenai',
+                provider: 'openai',
+                apiKey: 'test-key',
+                model: 'gpt-3.5-turbo'
+            });
             const mockProvider = {
                 Name: 'openai',
                 Execute: jest.fn().mockResolvedValue('```\nls -la\n```')
@@ -174,12 +202,19 @@ describe('CmdGenie', () => {
 
     describe('ShowHelp', () => {
         it('should display help information', () => {
+            mockConfigManager.GetActiveProviderEntry.mockReturnValue({
+                name: 'myopenai',
+                provider: 'openai',
+                apiKey: 'test-key',
+                model: 'gpt-3.5-turbo'
+            });
             const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
             cmdGenie.ShowHelp();
 
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('🧞 CmdGenie - AI-Powered Command Generator'));
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Provider: openai'));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Active Provider: myopenai'));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Provider Type: openai'));
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Model: gpt-3.5-turbo'));
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('API Key: ✅ Set'));
 

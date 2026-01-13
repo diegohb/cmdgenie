@@ -18,15 +18,15 @@ describe('ConfigManager', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        // By default, neither config nor providers files exist
+        mockedFs.existsSync.mockReturnValue(false);
         configManager = new ConfigManager();
     });
 
     describe('constructor and loading config', () => {
-        it('should load existing config file', () => {
+        it('should load existing new format config file', () => {
             const mockConfig: Config = {
-                provider: 'anthropic',
-                apiKey: 'test-key',
-                model: 'claude-3-haiku-20240307'
+                activeProvider: 'myopenai'
             };
 
             mockedFs.existsSync.mockReturnValue(true);
@@ -37,6 +37,33 @@ describe('ConfigManager', () => {
             expect(mockedFs.existsSync).toHaveBeenCalled();
             expect(mockedFs.readFileSync).toHaveBeenCalled();
             expect(newConfigManager.Config).toEqual(mockConfig);
+        });
+
+        it('should migrate old format config to registry', () => {
+            const oldConfig = {
+                provider: 'anthropic',
+                apiKey: 'test-key',
+                model: 'claude-3-haiku-20240307'
+            };
+
+            mockedFs.existsSync.mockReturnValue(true);
+            mockedFs.readFileSync.mockReturnValue(JSON.stringify(oldConfig));
+            mockedFs.writeFileSync.mockImplementation(() => {});
+
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+            const newConfigManager = new ConfigManager();
+
+            expect(consoleSpy).toHaveBeenCalledWith('🔄 Migrating legacy config to provider registry...');
+            expect(newConfigManager.Config.activeProvider).toBe('anthropic-default');
+            expect(newConfigManager.RegistryManager.GetProvider('anthropic-default')).toEqual({
+                name: 'anthropic-default',
+                provider: 'anthropic',
+                apiKey: 'test-key',
+                model: 'claude-3-haiku-20240307'
+            });
+
+            consoleSpy.mockRestore();
         });
 
         it('should return default config when file does not exist', () => {
@@ -70,23 +97,13 @@ describe('ConfigManager', () => {
         beforeEach(() => {
             mockedFs.existsSync.mockReturnValue(true);
             mockedFs.readFileSync.mockReturnValue(JSON.stringify({
-                provider: 'openai',
-                apiKey: 'test-api-key',
-                model: 'gpt-4'
+                activeProvider: 'myopenai'
             }));
             configManager = new ConfigManager();
         });
 
-        it('should return provider', () => {
-            expect(configManager.Provider).toBe('openai');
-        });
-
-        it('should return model', () => {
-            expect(configManager.Model).toBe('gpt-4');
-        });
-
-        it('should return api key', () => {
-            expect(configManager.ApiKey).toBe('test-api-key');
+        it('should return active provider', () => {
+            expect(configManager.ActiveProvider).toBe('myopenai');
         });
     });
 
@@ -130,93 +147,87 @@ describe('ConfigManager', () => {
         });
     });
 
-    describe('UpdateLLM', () => {
+    describe('UpdateActiveProvider', () => {
         beforeEach(() => {
             mockedFs.existsSync.mockReturnValue(true);
+            // Mock registry having a provider
+            configManager.RegistryManager.AddProvider('test-provider', 'openai', 'test-key', 'gpt-4');
         });
 
-        it('should update config with valid provider', () => {
-            const result = configManager.UpdateLLM('anthropic', 'new-api-key');
+        it('should update active provider with valid provider name', () => {
+            const result = configManager.UpdateActiveProvider('test-provider');
 
             expect(result).toBe(true);
-            expect(configManager.Provider).toBe('anthropic');
-            expect(configManager.ApiKey).toBe('new-api-key');
-            expect(configManager.Model).toBe('claude-3-haiku-20240307'); // default model
+            expect(configManager.ActiveProvider).toBe('test-provider');
             expect(mockedFs.writeFileSync).toHaveBeenCalled();
         });
 
-        it('should update config with custom model', () => {
-            const result = configManager.UpdateLLM('openai', 'api-key', 'gpt-4');
-
-            expect(result).toBe(true);
-            expect(configManager.Model).toBe('gpt-4');
-        });
-
-        it('should reject invalid provider', () => {
+        it('should reject invalid provider name', () => {
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
-            const result = configManager.UpdateLLM('invalid-provider', 'api-key');
+            const result = configManager.UpdateActiveProvider('invalid-provider');
 
             expect(result).toBe(false);
-            expect(consoleSpy).toHaveBeenCalledWith('Unsupported provider: invalid-provider');
+            expect(consoleSpy).toHaveBeenCalledWith('Provider \'invalid-provider\' not found in registry');
 
             consoleSpy.mockRestore();
         });
     });
 
-    describe('HasApiKey', () => {
-        it('should return true when api key exists', () => {
-            mockedFs.existsSync.mockReturnValue(true);
-            mockedFs.readFileSync.mockReturnValue(JSON.stringify({
-                provider: 'openai',
-                apiKey: 'test-key',
-                model: 'gpt-3.5-turbo'
-            }));
+    describe('HasActiveProvider', () => {
+        it('should return true when active provider is set and exists in registry', () => {
+            configManager.RegistryManager.AddProvider('existing-provider', 'openai', 'test-key', 'gpt-4');
+            configManager.UpdateActiveProvider('existing-provider');
 
-            const newConfigManager = new ConfigManager();
-            expect(newConfigManager.HasApiKey()).toBe(true);
+            expect(configManager.HasActiveProvider()).toBe(true);
         });
 
-        it('should return false when api key is null', () => {
+        it('should return false when active provider is not set', () => {
             mockedFs.existsSync.mockReturnValue(true);
             mockedFs.readFileSync.mockReturnValue(JSON.stringify({
-                provider: 'openai',
-                apiKey: null,
-                model: 'gpt-3.5-turbo'
+                activeProvider: ''
             }));
 
             const newConfigManager = new ConfigManager();
-            expect(newConfigManager.HasApiKey()).toBe(false);
+            expect(newConfigManager.HasActiveProvider()).toBe(false);
+        });
+
+        it('should return false when active provider does not exist in registry', () => {
+            mockedFs.existsSync.mockReturnValue(true);
+            mockedFs.readFileSync.mockReturnValue(JSON.stringify({
+                activeProvider: 'nonexistent'
+            }));
+
+            const newConfigManager = new ConfigManager();
+            expect(newConfigManager.HasActiveProvider()).toBe(false);
         });
     });
 
-    describe('GetProviderConfig', () => {
-        it('should return provider config for valid provider', () => {
-            mockedFs.existsSync.mockReturnValue(true);
-            mockedFs.readFileSync.mockReturnValue(JSON.stringify({
+    describe('GetActiveProviderEntry', () => {
+        it('should return provider entry for active provider', () => {
+            configManager.RegistryManager.AddProvider('test-provider', 'openai', 'test-key', 'gpt-4');
+            configManager.UpdateActiveProvider('test-provider');
+
+            const entry = configManager.GetActiveProviderEntry();
+
+            expect(entry).toEqual({
+                name: 'test-provider',
                 provider: 'openai',
                 apiKey: 'test-key',
-                model: 'gpt-3.5-turbo'
-            }));
-
-            const newConfigManager = new ConfigManager();
-            const providerConfig = newConfigManager.GetProviderConfig();
-
-            expect(providerConfig).toEqual({ defaultModel: 'gpt-3.5-turbo' });
+                model: 'gpt-4'
+            });
         });
 
-        it('should return undefined for invalid provider', () => {
+        it('should return undefined when no active provider', () => {
             mockedFs.existsSync.mockReturnValue(true);
             mockedFs.readFileSync.mockReturnValue(JSON.stringify({
-                provider: 'invalid',
-                apiKey: 'test-key',
-                model: 'gpt-3.5-turbo'
+                activeProvider: ''
             }));
 
             const newConfigManager = new ConfigManager();
-            const providerConfig = newConfigManager.GetProviderConfig();
+            const entry = newConfigManager.GetActiveProviderEntry();
 
-            expect(providerConfig).toBeUndefined();
+            expect(entry).toBeUndefined();
         });
     });
 });

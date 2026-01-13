@@ -11,12 +11,44 @@ async function main() {
         return;
     }
 
-    if (args[0] === '--update-llm') {
-        if (args.length < 3) {
-            console.error('❌ Usage: cmdgenie --update-llm <provider> <api-key> [model]');
+    if (args[0] === '--add-provider') {
+        if (args.length < 4) {
+            console.error('❌ Usage: cmdgenie --add-provider <name> <provider> <api-key> [model]');
             return;
         }
-        await genie.UpdateLLM(args[1], args[2], args[3]);
+        genie.AddProvider(args[1], args[2], args[3], args[4]);
+        return;
+    }
+
+    if (args[0] === '--list-providers') {
+        genie.ListProviders();
+        return;
+    }
+
+    if (args[0] === '--remove-provider') {
+        if (args.length < 2) {
+            console.error('❌ Usage: cmdgenie --remove-provider <name>');
+            return;
+        }
+        genie.RemoveProvider(args[1]);
+        return;
+    }
+
+    if (args[0] === '--show-provider') {
+        if (args.length < 2) {
+            console.error('❌ Usage: cmdgenie --show-provider <name>');
+            return;
+        }
+        genie.ShowProvider(args[1]);
+        return;
+    }
+
+    if (args[0] === '--update-llm') {
+        if (args.length < 2) {
+            console.error('❌ Usage: cmdgenie --update-llm <provider-name>');
+            return;
+        }
+        await genie.UpdateActiveProvider(args[1]);
         return;
     }
 

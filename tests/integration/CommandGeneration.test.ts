@@ -21,17 +21,19 @@ describe('Integration Tests', () => {
         // Setup mocks
         mockConfigManager = {
             Config: {
-                provider: 'openai',
-                apiKey: 'test-api-key',
-                model: 'gpt-3.5-turbo'
+                activeProvider: 'myopenai'
             },
-            Provider: 'openai',
-            Model: 'gpt-3.5-turbo',
-            ApiKey: 'test-api-key',
-            UpdateLLM: jest.fn(),
-            HasApiKey: jest.fn().mockReturnValue(true),
-            GetProviderConfig: jest.fn(),
-            SaveConfig: jest.fn()
+            ActiveProvider: 'myopenai',
+            UpdateActiveProvider: jest.fn(),
+            HasActiveProvider: jest.fn().mockReturnValue(true),
+            GetActiveProviderEntry: jest.fn(),
+            SaveConfig: jest.fn(),
+            RegistryManager: {
+                AddProvider: jest.fn(),
+                RemoveProvider: jest.fn(),
+                GetProvider: jest.fn(),
+                ListProviders: jest.fn().mockReturnValue(['myopenai'])
+            }
         } as any;
 
         mockProviderRegistry = {
@@ -51,10 +53,10 @@ describe('Integration Tests', () => {
             expect(mockedProviderRegistry).toHaveBeenCalledTimes(1);
         });
 
-        it('should handle missing API key validation', () => {
-            mockConfigManager.HasApiKey.mockReturnValue(false);
+        it('should handle missing active provider validation', () => {
+            mockConfigManager.HasActiveProvider.mockReturnValue(false);
 
-            expect(mockConfigManager.HasApiKey()).toBe(false);
+            expect(mockConfigManager.HasActiveProvider()).toBe(false);
         });
 
         it('should support provider registry integration', () => {
@@ -69,25 +71,21 @@ describe('Integration Tests', () => {
     });
 
     describe('Configuration Workflow', () => {
-        it('should update LLM configuration successfully', async () => {
-            mockConfigManager.UpdateLLM.mockReturnValue(true);
+        it('should update active provider successfully', async () => {
+            mockConfigManager.UpdateActiveProvider.mockReturnValue(true);
 
-            await cmdGenie.UpdateLLM('anthropic', 'new-api-key', 'claude-3-haiku');
+            await cmdGenie.UpdateActiveProvider('myanthropic');
 
-            expect(mockConfigManager.UpdateLLM).toHaveBeenCalledWith(
-                'anthropic',
-                'new-api-key',
-                'claude-3-haiku'
-            );
+            expect(mockConfigManager.UpdateActiveProvider).toHaveBeenCalledWith('myanthropic');
         });
 
-        it('should handle configuration update failure', async () => {
-            mockConfigManager.UpdateLLM.mockReturnValue(false);
+        it('should handle active provider update failure', async () => {
+            mockConfigManager.UpdateActiveProvider.mockReturnValue(false);
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
-            await cmdGenie.UpdateLLM('invalid-provider', 'key');
+            await cmdGenie.UpdateActiveProvider('invalid-provider');
 
-            expect(consoleSpy).toHaveBeenCalledWith('Unsupported provider: invalid-provider');
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to update active provider to: invalid-provider');
             consoleSpy.mockRestore();
         });
     });

@@ -3,7 +3,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { ConfigManager } from '../config';
 import { ProviderRegistry } from '../providers/registry';
-import { PROVIDERS, Config } from '../types';
+import { Config } from '../types';
 
 const execAsync = promisify(exec);
 
@@ -20,33 +20,92 @@ export class CmdGenie {
         return this._configManager.Config;
     }
 
-    public async UpdateLLM(provider: string, apiKey: string, model: string | null = null): Promise<void> {
-        const success = this._configManager.UpdateLLM(provider, apiKey, model);
+    public async UpdateActiveProvider(providerName: string): Promise<void> {
+        const success = this._configManager.UpdateActiveProvider(providerName);
         if (!success) {
-            console.error(`Unsupported provider: ${provider}`);
-            console.log('Supported providers:', Object.keys(PROVIDERS).join(', '));
+            console.error(`Failed to update active provider to: ${providerName}`);
+        }
+    }
+
+    public AddProvider(name: string, provider: string, apiKey: string, model?: string): void {
+        const success = this._configManager.RegistryManager.AddProvider(name, provider, apiKey, model || '');
+        if (!success) {
+            console.error(`Failed to add provider: ${name}`);
+        }
+    }
+
+    public ListProviders(): void {
+        const providers = this._configManager.RegistryManager.ListProviders();
+        if (providers.length === 0) {
+            console.log('No providers configured.');
+            return;
+        }
+        console.log('Configured providers:');
+        providers.forEach(name => {
+            const entry = this._configManager.RegistryManager.GetProvider(name);
+            if (entry) {
+                console.log(`  ${name}: ${entry.provider} (${entry.model})`);
+            }
+        });
+    }
+
+    public RemoveProvider(name: string): void {
+        const success = this._configManager.RegistryManager.RemoveProvider(name);
+        if (!success) {
+            console.error(`Failed to remove provider: ${name}`);
+        }
+    }
+
+    public ShowProvider(name: string): void {
+        const entry = this._configManager.RegistryManager.GetProvider(name);
+        if (!entry) {
+            console.error(`Provider '${name}' not found`);
+            return;
+        }
+        console.log(`Provider: ${name}`);
+        console.log(`  Type: ${entry.provider}`);
+        console.log(`  Model: ${entry.model}`);
+        console.log(`  API Key: ${entry.apiKey ? '✅ Set' : '❌ Not set'}`);
+        if (entry.endpointUrl) {
+            console.log(`  Endpoint: ${entry.endpointUrl}`);
         }
     }
 
     public async GenerateCommand(prompt: string): Promise<void> {
-        if (!this._configManager.HasApiKey()) {
-            console.error('❌ No API key configured. Please run: cmdgenie --update-llm <provider> <api-key>');
-            return;
+        if (!this._configManager.HasActiveProvider()) {
+            if (this._configManager.RegistryManager.ListProviders().length === 0) {
+                // First run: no providers configured
+                console.error('❌ No providers configured. This appears to be your first run.');
+                console.log('Please add a provider first:');
+                console.log('  cmdgenie --add-provider <name> <provider> <api-key> [model]');
+                console.log('Example: cmdgenie --add-provider myopenai openai sk-your-api-key');
+                return;
+            } else {
+                console.error('❌ No active provider selected. Please choose one:');
+                console.log('Available providers:', this._configManager.RegistryManager.ListProviders().join(', '));
+                console.log('Set active: cmdgenie --update-llm <provider-name>');
+                return;
+            }
         }
 
         console.log('🤖 Generating command...');
 
         try {
-            const provider = this._providerRegistry.GetProvider(this._configManager.Provider);
-            
+            const activeEntry = this._configManager.GetActiveProviderEntry();
+            if (!activeEntry) {
+                throw new Error('Active provider not found in registry');
+            }
+
+            const provider = this._providerRegistry.GetProvider(activeEntry.provider);
+
             if (!provider) {
-                throw new Error(`Unsupported provider: ${this._configManager.Provider}`);
+                throw new Error(`Unsupported provider: ${activeEntry.provider}`);
             }
 
             let command = await provider.Execute(
                 prompt,
-                this._configManager.ApiKey!,
-                this._configManager.Model
+                activeEntry.apiKey,
+                activeEntry.model
             );
 
             command = command.replace(/```[\s\S]*?```/g, '').replace(/`/g, '').trim();
@@ -78,29 +137,37 @@ export class CmdGenie {
     }
 
     public ShowHelp(): void {
+        const activeEntry = this._configManager.GetActiveProviderEntry();
         console.log(`
- 🧞 CmdGenie - AI-Powered Command Generator
+  🧞 CmdGenie - AI-Powered Command Generator
 
- Usage:
-   cmdgenie "your natural language request"
-   cmdgenie --update-llm <provider> <api-key> [model]
-   cmdgenie --help
+  Usage:
+    cmdgenie "your natural language request"
+    cmdgenie --add-provider <name> <provider> <api-key> [model]
+    cmdgenie --list-providers
+    cmdgenie --remove-provider <name>
+    cmdgenie --show-provider <name>
+    cmdgenie --update-llm <provider-name>
+    cmdgenie --help
 
- Examples:
-   cmdgenie "find all directories in current folder"
-   cmdgenie "show disk usage"
-   cmdgenie "kill process on port 3000"
-   
- Update LLM:
-   cmdgenie --update-llm openai sk-your-api-key
-   cmdgenie --update-llm anthropic your-api-key claude-3-haiku-20240307
-   cmdgenie --update-llm google your-api-key gemini-pro
-   cmdgenie --update-llm cohere your-api-key
+  Examples:
+    cmdgenie "find all directories in current folder"
+    cmdgenie "show disk usage"
+    cmdgenie "kill process on port 3000"
 
- Current config:
-   Provider: ${this._configManager.Provider}
-   Model: ${this._configManager.Model}
-   API Key: ${this._configManager.ApiKey ? '✅ Set' : '❌ Not set'}
-`);
+  Provider Management:
+    cmdgenie --add-provider myopenai openai sk-your-api-key
+    cmdgenie --add-provider myanthropic anthropic your-api-key claude-3-haiku-20240307
+    cmdgenie --list-providers
+    cmdgenie --show-provider myopenai
+    cmdgenie --update-llm myopenai
+    cmdgenie --remove-provider myopenai
+
+  Current config:
+    Active Provider: ${this._configManager.ActiveProvider || 'None'}
+    Provider Type: ${activeEntry?.provider || 'N/A'}
+    Model: ${activeEntry?.model || 'N/A'}
+    API Key: ${activeEntry?.apiKey ? '✅ Set' : '❌ Not set'}
+ `);
     }
 }

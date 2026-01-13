@@ -4,10 +4,20 @@ export interface ProviderConfig {
     defaultModel: string;
 }
 
-export interface Config {
+export interface ProviderEntry {
+    name: string;
     provider: string;
-    apiKey: string | null;
+    apiKey: string;
     model: string;
+    endpointUrl?: string;
+}
+
+export interface ProviderRegistry {
+    [providerName: string]: ProviderEntry;
+}
+
+export interface Config {
+    activeProvider: string;
 }
 
 export interface Provider {
