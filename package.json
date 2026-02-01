@@ -12,7 +12,7 @@
         "clean": "if exist dist rmdir /s /q dist",
         "dev": "tsc --watch",
         "prepublishOnly": "npm run build",
-        "postbuild": "powershell -Command \"$content = Get-Content dist\\index.js; Set-Content -Path dist\\index.js -Value '#!/usr/bin/env node', $content\"",
+        "postbuild": "node -e \"const fs = require('fs'); const content = fs.readFileSync('dist/index.js', 'utf8'); fs.writeFileSync('dist/index.js', '#!/usr/bin/env node\\n' + content);\""
         "lint": "oxlint src/ tests/",
         "lint:fix": "oxlint --fix src/ tests/",
         "test": "npm run lint && jest",
